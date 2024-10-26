@@ -6,3 +6,5 @@ node_modules
 .dev.vars
 
 .wrangler
+wrangler.toml
+worker-configuration.d.ts
