@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
 import MuxUploader from "@mux/mux-uploader-react";
 import { json, redirect } from "@remix-run/node";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
+import { Form, Link, useActionData, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import Mux from "@mux/mux-node";
 import { Button } from "~/components/ui/button";
@@ -98,7 +98,18 @@ export default function UploadPage() {
         {isUploadSuccess ? "Watch video" : "Waiting for upload..."}
       </button>
       {message ? <p>{message}</p> : null}
-      <Button>Upload</Button>
+      <ul>
+        <li>
+          <Link to="/dashboard"><Button variant={"outline"}>Profile</Button></Link>
+        </li>
+        <li>
+          <Link to="/login"><Button variant={"default"}>Login</Button></Link>
+        </li>
+        <li>
+          <Link to="/logout"><Button variant={"destructive"}>Log out</Button></Link>
+        </li>
+      </ul>
+
     </Form>
   );
 }
