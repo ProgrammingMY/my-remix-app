@@ -1,6 +1,8 @@
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { Outlet, useLoaderData } from "@remix-run/react"
 import Navbar from "~/components/navbar/navbar";
+import { AppSidebar } from "~/components/sidebar/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
 
 // export const loader = async ({ context, request }: LoaderFunctionArgs) => {
@@ -21,15 +23,18 @@ import { createSupabaseServerClient } from "~/utils/supabase.server";
 
 export default function Dashboard() {
     return (
-        <div className="h-full">
-            <div className="h-[80px] w-full fixed inset-y-0 z-50">
-                <Navbar />
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarTrigger />
+            <div className="h-full w-full">
+                <div className="h-[80px] pr-2 pt-2 z-50">
+                    <Navbar />
+                </div>
+                <main className="pt-[80px] h-full">
+                    <Outlet />
+                </main>
             </div>
-            <main className="pt-[80px] h-full">
-                <Outlet />
-            </main>
-
-        </div>
+        </SidebarProvider>
     )
 
 }

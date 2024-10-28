@@ -4,6 +4,7 @@ import { ActionFunctionArgs, json, redirect } from '@remix-run/cloudflare'
 import { Form, Link, useActionData, useLoaderData } from '@remix-run/react'
 import React from 'react'
 import { useForm } from 'react-hook-form'
+import { redirectWithError, redirectWithSuccess } from 'remix-toast'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -37,19 +38,16 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
                 slug: slug,
             }
         });
-
-        return redirect(`/teacher/courses/${course.slug}`);
+        return redirectWithSuccess(`/teacher/courses/${course.slug}`, "Course created successfully");
 
     } catch (error) {
-        console.log(error)
-        return redirect("/teacher/courses");
+        return redirectWithError("/teacher/courses", "Something went wrong");
     }
 
 }
 
 export default function CreatePage() {
     return (
-
         <div className='max-w-5xl mx-auto flex md:items-center md:justify-center h-full p-6'>
             <div>
                 <h1 className='text-2xl'>
