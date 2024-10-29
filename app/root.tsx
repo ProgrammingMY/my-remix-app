@@ -59,8 +59,17 @@ export default function App() {
 
   useEffect(() => {
     if (toastLib) {
-      // Call your toast function here
-      toast(toastLib.message);
+      switch (toastLib.type) {
+        case "success":
+          toast.success(toastLib.message);
+          break;
+        case "error":
+          toast.error(toastLib.message);
+          break;
+        default:
+          toast(toastLib.message);
+          break;
+      }
     }
   }, [toastLib])
 

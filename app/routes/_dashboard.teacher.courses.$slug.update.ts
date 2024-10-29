@@ -27,9 +27,14 @@ export const action = async ({
     }
 
     const db = createPrismaClient(env);
-
     const formData = await request.formData();
-    const data = Object.fromEntries(formData.entries());
+    const data = JSON.parse(
+      JSON.stringify(Object.fromEntries(formData.entries()))
+    );
+
+    if (data.price && data.price !== "") {
+      data.price = parseFloat(data.price);
+    }
 
     await db.course.update({
       where: {
@@ -46,6 +51,7 @@ export const action = async ({
       }
     );
   } catch (error) {
+    console.log(error);
     return jsonWithError(
       { result: "Something went wrong." },
       { message: "Error" }

@@ -24,7 +24,7 @@ export const action = async ({ context, request }: ActionFunctionArgs) => {
         return json({ success: false, message: "Invalid email or password" })
     }
 
-    return redirect("/dashboard", {
+    return redirect("/user", {
         headers
     });
 };

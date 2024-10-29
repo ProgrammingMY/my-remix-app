@@ -10,23 +10,31 @@ import {
     FormMessage
 } from "~/components/ui/form";
 import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
 
 import { useState } from 'react'
 import { Pencil } from 'lucide-react';
-import { CourseFormProps } from '~/lib/types';
+import { cn } from '~/lib/utils';
+import { Textarea } from '~/components/ui/textarea';
 import { useFetcher, useNavigate } from '@remix-run/react';
-import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 
-// 30 alphanumeric characters and spaces and _ only
+interface TitleFormProps {
+    initialData: {
+        description: string | null;
+    };
+    courseSlug: string;
+}
+
+// 100 alphanumeric characters and spaces and _ only
 const formSchema = z.object({
-    title: z.string().min(5).max(30).regex(/^[a-zA-Z0-9\s_]+$/, {
-        message: "Max 30 alphanumeric characters, space and '_' only",
+    description: z.string().min(5).max(100).regex(/^[a-zA-Z0-9\s_]+$/, {
+        message: "Max 100 alphanumeric characters, space and '_' only",
     }),
 });
 
-function TitleForm({ initialData, courseSlug }: CourseFormProps) {
+
+export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => {
     const [isEditting, setIsEditting] = useState(false);
+    const navigate = useNavigate();
     const fetcher = useFetcher();
 
     const toggleEditting = () => {
@@ -35,7 +43,7 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: initialData,
+        defaultValues: { description: initialData?.description || "" },
     });
 
     const isLoading = fetcher.state === "loading";
@@ -43,49 +51,48 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             const formData = new FormData();
-            formData.append("title", values.title);
+            formData.append("description", values.description);
             fetcher.submit(formData, {
                 method: "post",
                 action: `/teacher/courses/${courseSlug}/update`,
             });
-            jsonWithSuccess({ result: "Course title updated successfully." }, { message: "Success" });
             setIsEditting(false);
         } catch (error) {
-            jsonWithError({ result: "Something went wrong." }, { message: "Error" });
+            
         }
     }
 
 
     return (
-        <div className='mt-6 border bg-slate-100 rounded-md p-4'>
+        <div className='mt-6 border bg-slate-100 rounded-md p-4' >
             <div className='font-medium flex items-center justify-between'>
-                Course Title
+                Course Description
                 <Button onClick={toggleEditting} variant='ghost' type='button'>
                     {isEditting ? (
                         <>Cancel</>
                     ) : <>
                         <Pencil className='h-4 w-4 mr-2' />
-                        Edit Title
+                        Edit Description
                     </>
                     }
                 </Button>
             </div>
             {!isEditting ? (
-                <div className='text-sm mt-2'>
-                    {initialData.title}
-                </div>
+                <p className={cn("text-sm mt-2", !initialData.description && "text-slate-500 italic")}>
+                    {initialData.description || "No description"}
+                </p>
             ) : (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mt-4'>
                         <FormField
                             control={form.control}
-                            name='title'
+                            name='description'
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input
+                                        <Textarea
                                             disabled={!isEditting}
-                                            placeholder='e.g. Introduction to Computer Science'
+                                            placeholder='e.g. This course is about...'
                                             {...field}
                                         />
                                     </FormControl>
@@ -105,8 +112,6 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
                     </form>
                 </Form>
             )}
-        </div>
+        </div >
     )
 }
-
-export default TitleForm

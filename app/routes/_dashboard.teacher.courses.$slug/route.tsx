@@ -1,10 +1,13 @@
 import { IconBadge } from "~/components/icon-badge";
 import TitleForm from "./title-form";
-import { LayoutDashboard } from "lucide-react";
+import { CircleDollarSign, LayoutDashboard } from "lucide-react";
 import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { createPrismaClient } from "~/utils/prisma.server";
 import { useLoaderData } from "@remix-run/react";
+import { DescriptionForm } from "./description-form";
+import { PriceForm } from "./price-form";
+import { ImageForm } from "./image-form";
 
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
@@ -96,15 +99,15 @@ export default function CourseForm() {
                         initialData={course}
                         courseSlug={course.slug}
                     />
-                    {/* <DescriptionForm
+                    <DescriptionForm
                         initialData={course}
-                        courseId={course.id}
+                        courseSlug={course.slug}
                     />
                     <ImageForm
                         initialData={course}
-                        courseId={course.id}
+                        courseSlug={course.slug}
                     />
-                    <CategoryForm
+                    {/* <CategoryForm
                         initialData={course}
                         courseId={course.id}
                         options={categories.map((category) => ({
@@ -112,8 +115,7 @@ export default function CourseForm() {
                             value: category.id,
                         }))}
                     /> */}
-                </div>
-                <div className='space-y-6'>
+
                     {/* <div>
                         <div className='flex items-center gap-x-2'>
                             <IconBadge icon={ListCheck} />
@@ -127,15 +129,15 @@ export default function CourseForm() {
                         />
                     </div> */}
 
-                    {/* <div>
+                    <div>
                         <div className='flex items-center gap-x-2'>
                             <IconBadge icon={CircleDollarSign} />
                             <h2 className='text-xl'>
                                 Sell your course
                             </h2>
                         </div>
-                        <PriceForm initialData={course} courseId={course.id} />
-                    </div> */}
+                        <PriceForm initialData={course} courseSlug={course.slug} />
+                    </div>
                     {/* <div>
                         <div className='flex items-center gap-x-2'>
                             <IconBadge icon={File} />

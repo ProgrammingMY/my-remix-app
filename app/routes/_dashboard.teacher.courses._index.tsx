@@ -43,7 +43,7 @@ export default function TeacherCourses() {
             </Link>
             <div className='flex flex-col gap-4 mt-4'>
                 {courses.map(course => (
-                    <Link to={`/teacher/courses/${course.slug}`}>
+                    <Link to={`/teacher/courses/${course.slug}`} key={course.id}>
                         <Button variant={'ghost'} className='flex items-center justify-center'>
                             {course.title}
                         </Button>
