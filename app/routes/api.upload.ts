@@ -33,6 +33,18 @@ export async function action({ request, context }: ActionFunctionArgs) {
           }
         }
       }),
+      attachment: route({
+        fileTypes: ["image/*", "application/pdf", "application/json", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.openxmlformats.officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/x-zip-compressed", "application/zip"],
+        multipleFiles: true,
+        maxFileSize: 1024 * 1024 * 10,
+        maxFiles: 5,
+        onBeforeUpload: async () => {
+          const user = await authenticateUser({ request, env });
+          if (!user) {
+            throw new UploadFileError("Not authenticated")
+          }
+        }
+      })
     },
   });
 }
