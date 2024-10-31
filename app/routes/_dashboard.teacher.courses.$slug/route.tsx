@@ -54,7 +54,6 @@ export const action = async ({
             }
         );
     } catch (error) {
-        console.log(error);
         return jsonWithError(
             { result: "Something went wrong." },
             { message: "Error" }

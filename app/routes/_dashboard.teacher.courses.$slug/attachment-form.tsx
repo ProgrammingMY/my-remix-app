@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Attachment, Course } from '@prisma/client';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { UploadDropzone } from '~/components/ui/upload-dropzone';
+import { useFetcher, useParams } from '@remix-run/react';
 
 interface AttachmentFormProps {
     initialData: Course & { attachments: Attachment[] };
@@ -14,14 +15,15 @@ interface AttachmentFormProps {
 }
 
 const formSchema = z.array(z.object({
-    url: z.string().min(1),
-    name: z.string().min(1),
+    fileUrl: z.string().min(1),
+    fileName: z.string().min(1),
 }));
 
 
 export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps) => {
     const [isEditting, setIsEditting] = useState(false);
     const [deletingId, setdeletingId] = useState<string | null>(null);
+    const fetcher = useFetcher();
 
     const toggleEditting = () => {
         setIsEditting((prev) => !prev);
@@ -30,7 +32,11 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
-            console.log(values);
+            fetcher.submit(values, {
+                method: "post",
+                action: `/api/teacher/courses/${courseSlug}/attachments`,
+                encType: "application/json",
+            });
             jsonWithSuccess({ result: "Success" }, { message: "Image uploaded successfully." });
             setIsEditting(false);
         } catch (error) {
@@ -40,7 +46,15 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
 
     const onDelete = async (id: string) => {
         try {
-            // await axios.delete(`/api/courses/${courseId}/attachments/${id}`);
+            setdeletingId(id);
+            const data = {
+                id
+            }
+            fetcher.submit(data, {
+                method: "delete",
+                action: `/api/teacher/courses/${courseSlug}/attachments`,
+                encType: "application/json",
+            });
             jsonWithSuccess({ result: "Success" }, { message: "Attachment deleted successfully." });
         } catch (error) {
             jsonWithError({ result: "Error" }, { message: "Something went wrong." });
@@ -81,7 +95,7 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
                             onUploadComplete={({ files, metadata }) => {
                                 // update all files in db
                                 if (files.length > 0) {
-                                    onSubmit(files.map((file) => ({ url: file.objectKey, name: file.name })));
+                                    onSubmit(files.map((file) => ({ fileUrl: file.objectKey, fileName: file.name })));
                                 }
                                 jsonWithSuccess({ result: "Success" }, { message: "Course updated successfully." });
                             }}
@@ -108,11 +122,9 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
                                             <Loader2 className='h-4 w-4 animate-spin' />
                                         </div>
                                     )}
-                                    {deletingId === attachment.id && (
-                                        <Button onClick={() => onDelete(attachment.id)} className='ml-auto hover:opacity-75 transition'>
-                                            <X className='h-4 w-4' />
-                                        </Button>
-                                    )}
+                                    <Button variant={'ghost'} size={"sm"} onClick={() => onDelete(attachment.id)} className='ml-auto hover:opacity-75 transition'>
+                                        <X />
+                                    </Button>
                                 </div>
                             ))}
 

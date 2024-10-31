@@ -9,7 +9,6 @@ import { UploadDropzone } from '~/components/ui/upload-dropzone';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { useFetcher, useNavigate } from '@remix-run/react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
-import { Progress } from '~/components/ui/progress';
 
 
 const formSchema = z.object({
@@ -100,7 +99,7 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
                     </div>
                 ) : (
                     <div className='relative aspect-video mt-2'>
-                        <img src={initialData.imageUrl} alt="Course image" />
+                        <img src={`https://bucket.programmingmy.com/${initialData.imageUrl}`} alt="Course image" />
                     </div>
                 )
             ) : (
