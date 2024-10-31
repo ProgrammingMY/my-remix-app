@@ -25,12 +25,12 @@ export default function Dashboard() {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <SidebarTrigger />
+            {/* <SidebarTrigger /> */}
             <div className="h-full w-full">
-                <div className="h-[80px] pr-2 pt-2 z-50">
+                <div className="h-[80px] p-6 py-2 z-50">
                     <Navbar />
                 </div>
-                <main className="pt-[80px] h-full">
+                <main className="h-full p-6">
                     <Outlet />
                 </main>
             </div>

@@ -48,14 +48,11 @@ export const PriceForm = ({ initialData, courseSlug }: PriceFormProps) => {
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
-            const formData = new FormData();
-            formData.append("price", values.price.toString());
-            fetcher.submit(formData, {
+            fetcher.submit(values, {
                 method: "post",
-                action: `/teacher/courses/${courseSlug}/update`,
+                encType: "application/json",
             });
             setIsEditting(false);
-            // navigate('.', { replace: true });
         } catch (error) {
 
         }
@@ -63,7 +60,7 @@ export const PriceForm = ({ initialData, courseSlug }: PriceFormProps) => {
 
 
     return (
-        <div className='mt-6 border bg-slate-100 rounded-md p-4' >
+        <div className='border bg-slate-100 rounded-md p-4' >
             <div className='font-medium flex items-center justify-between'>
                 Course Price
                 <Button onClick={toggleEditting} variant='ghost' type='button'>

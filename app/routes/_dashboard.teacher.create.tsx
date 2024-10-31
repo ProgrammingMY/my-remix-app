@@ -48,7 +48,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
 export default function CreatePage() {
     return (
-        <div className='max-w-5xl mx-auto flex md:items-center md:justify-center h-full p-6'>
+        <div className='max-w-5xl mx-auto flex md:items-center md:justify-center h-full'>
             <div>
                 <h1 className='text-2xl'>
                     Name Your Course

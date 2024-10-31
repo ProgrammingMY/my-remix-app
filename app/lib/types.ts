@@ -9,6 +9,6 @@ export interface CourseFormProps {
 }
 export interface ChapterFormProps {
   initialData: Chapter;
-  courseId: string;
+  courseSlug: string;
   chapterId: string;
 }

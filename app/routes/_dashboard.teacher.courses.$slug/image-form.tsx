@@ -28,9 +28,12 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
         setIsEditting((prev) => !prev);
     }
 
-
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
+            fetcher.submit(values, {
+                method: "post",
+                encType: "application/json",
+            })
             jsonWithSuccess(
                 { result: "Success" },
                 {
@@ -49,7 +52,7 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
 
 
     return (
-        <div className='mt-6 border bg-slate-100 rounded-md p-4' >
+        <div className='border bg-slate-100 rounded-md p-4' >
             <div className='font-medium flex items-center justify-between'>
                 Course Image
                 <Dialog open={isEditting} onOpenChange={setIsEditting}>
@@ -77,8 +80,10 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
                                 fileTypes: 'JPEG, PNG',
                             }}
                             onUploadComplete={({ files, metadata }) => {
-                                // update files in db
-                                
+                                if (files.length > 0) {
+                                    onSubmit({ imageUrl: files[0].objectKey });
+                                }
+
                                 jsonWithSuccess({ result: "Success" }, { message: "Course updated successfully." });
                             }}
                             onUploadError={(error) => {
@@ -95,7 +100,7 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
                     </div>
                 ) : (
                     <div className='relative aspect-video mt-2'>
-                        <img src={initialData.imageUrl} alt="course image" />
+                        <img src={initialData.imageUrl} alt="Course image" />
                     </div>
                 )
             ) : (

@@ -42,11 +42,9 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
-            const formData = new FormData();
-            formData.append("title", values.title);
-            fetcher.submit(formData, {
+            fetcher.submit(values, {
                 method: "post",
-                action: `/teacher/courses/${courseSlug}/update`,
+                encType: "application/json",
             });
             jsonWithSuccess({ result: "Course title updated successfully." }, { message: "Success" });
             setIsEditting(false);
@@ -57,7 +55,7 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
 
 
     return (
-        <div className='mt-6 border bg-slate-100 rounded-md p-4'>
+        <div className='border bg-slate-100 rounded-md p-4'>
             <div className='font-medium flex items-center justify-between'>
                 Course Title
                 <Button onClick={toggleEditting} variant='ghost' type='button'>
