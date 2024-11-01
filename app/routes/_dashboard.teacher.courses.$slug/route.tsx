@@ -12,6 +12,8 @@ import { AttachmentForm } from "./attachment-form";
 import { ChaptersForm } from "./chapters-form";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
 import { Course } from "@prisma/client";
+import Mux from "@mux/mux-node";
+import Action from "./action";
 
 export const action = async ({
     context,
@@ -37,23 +39,78 @@ export const action = async ({
         }
 
         const db = createPrismaClient(env);
-        const values = await request.json() as Course;
 
-        await db.course.update({
-            where: {
-                slug: params.slug,
-                userId: user.id,
-            },
-            data: { ...values },
-        });
+        // DELETE METHOD
+        if (request.method === "DELETE") {
+            const course = await db.course.findUnique({
+                where: {
+                    id: params.courseId,
+                    userId: user.id,
+                },
+                include: {
+                    chapters: {
+                        include: {
+                            muxData: true,
+                        },
+                    },
+                },
+            });
 
-        return jsonWithSuccess(
-            { result: "Course updated successfully." },
-            {
-                message: "Success",
+            if (!course) {
+                return jsonWithError("Error", "Course not found");
             }
-        );
+
+            const mux = new Mux({
+                tokenId: env.MUX_TOKEN_ID,
+                tokenSecret: env.MUX_TOKEN_SECRET,
+            });
+
+            if (!mux) {
+                throw new Error("Mux is not configured");
+            }
+
+            for (const chapter of course.chapters) {
+                if (chapter.muxData?.assetId) {
+                    await mux.video.assets.delete(chapter.muxData.assetId);
+                }
+            }
+
+            await db.course.delete({
+                where: {
+                    id: params.courseId,
+                },
+            });
+
+            return jsonWithSuccess(
+                { result: "Course deleted successfully." },
+                {
+                    message: "Success",
+                }
+            );
+        }
+
+        // PATCH METHOD
+        else if (request.method === "PATCH") {
+            const values = await request.json() as Course;
+
+            await db.course.update({
+                where: {
+                    slug: params.slug,
+                    userId: user.id,
+                },
+                data: { ...values },
+            });
+
+            return jsonWithSuccess(
+                { result: "Course updated successfully." },
+                {
+                    message: "Success",
+                }
+            );
+        }
+
     } catch (error) {
+        console.log("[UPDATE COURSE] ERROR", error);
         return jsonWithError(
             { result: "Something went wrong." },
             { message: "Error" }
@@ -103,7 +160,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         course.description,
         course.imageUrl,
         course.price,
-        course.categoryId,
+        // course.categoryId,
         course.chapters.some(chapter => chapter.isPublished)
     ];
 
@@ -133,11 +190,11 @@ export default function CourseForm() {
                         Complete all fields {completionText}
                     </span>
                 </div>
-                {/* <Action
+                <Action
                     disabled={!isComplete}
-                    courseId={course.id}
+                    courseSlug={course.slug}
                     isPublished={course.isPublished}
-                /> */}
+                />
 
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-8'>
