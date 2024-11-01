@@ -49,7 +49,7 @@ export const PriceForm = ({ initialData, courseSlug }: PriceFormProps) => {
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             fetcher.submit(values, {
-                method: "post",
+                method: "PATCH",
                 encType: "application/json",
             });
             setIsEditting(false);

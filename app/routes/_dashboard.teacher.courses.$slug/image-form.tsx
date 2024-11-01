@@ -30,7 +30,7 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             fetcher.submit(values, {
-                method: "post",
+                method: "PATCH",
                 encType: "application/json",
             })
             jsonWithSuccess(

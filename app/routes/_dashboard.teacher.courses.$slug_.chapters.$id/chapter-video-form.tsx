@@ -17,41 +17,45 @@ interface ChapterVideoProps {
     chapterId: string;
 }
 
+type MuxUploaderProps = {
+    id: string;
+    url: string;
+} | null;
+
 
 const formSchema = z.object({
-    videoUrl: z.string().min(1),
+    uploadId: z.string().min(1),
 });
-
-const initialState = {
-    message: "",
-    status: "",
-}
 
 
 export const ChapterVideoForm = ({ initialData, courseSlug, chapterId }: ChapterVideoProps) => {
     const [isEditting, setIsEditting] = useState(false);
-    const [uploadId, setUploadId] = useState("");
+    const [uploadData, setUploadData] = useState<MuxUploaderProps>(null);
     const fetcher = useFetcher();
 
     const toggleEditting = () => {
         setIsEditting((prev) => !prev);
-        fetcher.load(`/api/muxurl`);
     }
 
     useEffect(() => {
-        if (fetcher.state === "idle" && fetcher.data) {
-            const data = fetcher.data as { id: string, url: string };
-            if (data.id && data.url) {
-                console.log("ID", data.id);
-                console.log("URL", data.url);
-            }
+        if (fetcher.state === "idle" && !fetcher.data && isEditting) {
+            fetcher.load(`/api/muxurl`);
         }
-    }, [fetcher])
+        if (fetcher.data) {
+            setUploadData(fetcher.data as { id: string, url: string });
+        }
 
+        return () => {
+            setUploadData(null);
+        }
+    }, [fetcher, isEditting]);
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
-            // await axios.patch(`/api/courses/${courseId}/chapters/${chapterId}`, values);
+            fetcher.submit(values, {
+                method: "PATCH",
+                encType: "application/json",
+            })
             jsonWithSuccess({ result: "success" }, { message: "Chapter updated successfully." });
         } catch (error) {
             jsonWithError({ result: "error" }, { message: "Something went wrong." });
@@ -76,13 +80,17 @@ export const ChapterVideoForm = ({ initialData, courseSlug, chapterId }: Chapter
                         <DialogHeader>
                             <DialogTitle>Upload video</DialogTitle>
                         </DialogHeader>
-                        <MuxUploader />
+                        <DialogDescription>
+                        </DialogDescription>
+                        {uploadData && (
+                            <MuxUploader endpoint={uploadData.url} onSuccess={() => onSubmit({ uploadId: uploadData.id })} />
+                        )}
                     </DialogContent>
                 </Dialog>
 
             </div>
             {!isEditting && (
-                !initialData.videoUrl ? (
+                !initialData.uploadId ? (
                     <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
                         <Video className='h-10 w-10 text-slate-500' />
                     </div>
@@ -94,7 +102,7 @@ export const ChapterVideoForm = ({ initialData, courseSlug, chapterId }: Chapter
                     </div>
                 )
             )}
-            {initialData.videoUrl && !isEditting && (
+            {initialData.uploadId && !isEditting && (
                 <div className='text-xs text-muted-foreground mt-2'>
                     Videos can take a few minutes to process. Refresh the page if video does not appear.
                 </div>

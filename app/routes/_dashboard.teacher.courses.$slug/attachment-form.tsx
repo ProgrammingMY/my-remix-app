@@ -51,7 +51,7 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
                 id
             }
             fetcher.submit(data, {
-                method: "delete",
+                method: "DELETE",
                 action: `/api/teacher/courses/${courseSlug}/attachments`,
                 encType: "application/json",
             });

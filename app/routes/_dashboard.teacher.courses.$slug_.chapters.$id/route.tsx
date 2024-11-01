@@ -11,6 +11,8 @@ import { ChapterTitleForm } from './chapter-title-form';
 import { ChapterAccessForm } from './chapter-access-form';
 import { Chapter } from '@prisma/client';
 import { ChapterVideoForm } from './chapter-video-form';
+import Mux from '@mux/mux-node';
+import ChapterAction from './chapter-action';
 
 export const action = async ({ context, params, request }: ActionFunctionArgs) => {
     try {
@@ -44,6 +46,74 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             return jsonWithError("Error", "Course not found");
         }
 
+        // DELETE METHOD
+        if (request.method === "DELETE") {
+            const chapter = await db.chapter.findUnique({
+                where: {
+                    courseId: courseOwner.id,
+                    id: params.id,
+                },
+            });
+
+            if (!chapter) {
+                return jsonWithError("Error", "Course not found");
+            }
+
+            if (chapter.uploadId) {
+                const mux = new Mux({
+                    tokenId: env.MUX_TOKEN_ID,
+                    tokenSecret: env.MUX_TOKEN_SECRET,
+                });
+
+                if (!mux) {
+                    throw new Error("Mux is not configured");
+                }
+
+                const existingVideo = await db.muxData.findFirst({
+                    where: {
+                        chapterId: params.id,
+                    },
+                });
+
+                if (existingVideo) {
+                    await mux.video.assets.delete(existingVideo.assetId);
+                    await db.muxData.delete({
+                        where: {
+                            chapterId: params.id,
+                            assetId: existingVideo.assetId,
+                        },
+                    });
+                }
+            }
+
+            const deletedChapter = await db.chapter.delete({
+                where: {
+                    id: params.id,
+                },
+            });
+
+            const publishedChaptersinCourse = await db.chapter.findMany({
+                where: {
+                    courseId: params.id,
+                    isPublished: true,
+                },
+            });
+
+            if (!publishedChaptersinCourse.length) {
+                await db.course.update({
+                    where: {
+                        slug: params.slug,
+                    },
+                    data: {
+                        isPublished: false,
+                    },
+                });
+            }
+
+            return jsonWithSuccess("Success", "Chapter deleted successfully.");
+        }
+
+        // PATCH METHOD
         const values = await request.json() as Chapter;
 
         const chapter = await db.chapter.update({
@@ -55,6 +125,71 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                 ...values,
             },
         });
+
+        // if user upload video
+        if (values.uploadId) {
+            const mux = new Mux({
+                tokenId: env.MUX_TOKEN_ID,
+                tokenSecret: env.MUX_TOKEN_SECRET,
+            });
+
+            if (!mux) {
+                throw new Error("Mux is not configured");
+            }
+
+            // check if mux video already exists
+            const existingVideo = await db.muxData.findFirst({
+                where: {
+                    chapterId: params.id,
+                },
+            });
+
+            // delete video from mux if it exists
+            if (existingVideo) {
+                const videoInMux = await mux.video.assets.retrieve(existingVideo.assetId);
+
+                if (videoInMux) {
+                    await mux.video.assets.delete(existingVideo.assetId);
+                }
+
+                await db.muxData.delete({
+                    where: {
+                        chapterId: params.id,
+                    },
+                });
+            }
+
+            const newMuxVideo = await mux.video.uploads.retrieve(values.uploadId);
+
+            if (newMuxVideo.asset_id) {
+                // check if muxData already exist
+                const muxDataExist = await db.muxData.findFirst({
+                    where: {
+                        assetId: newMuxVideo.asset_id,
+                    },
+                });
+
+                if (muxDataExist) {
+                    await db.muxData.update({
+                        where: {
+                            assetId: newMuxVideo.asset_id,
+                        },
+                        data: {
+                            chapterId: params.id!,
+                        },
+                    });
+                } else {
+                    await db.muxData.create({
+                        data: {
+                            assetId: newMuxVideo.asset_id,
+                            chapterId: params.id!,
+                        },
+                    });
+                }
+            }
+        }
+
+
 
         return jsonWithSuccess("Success", "Chapter updated successfully");
 
@@ -87,8 +222,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const requiredField = [
         chapter.title,
-        chapter.description,
-        chapter.videoUrl,
+        chapter.uploadId,
     ];
 
     const totalField = requiredField.length;
@@ -130,12 +264,12 @@ const ChapterIdPage = () => {
 
                                 </span>
                             </div>
-                            {/* <ChapterAction
+                            <ChapterAction
                                 disabled={!isCompleted}
-                                courseId={params.courseId}
-                                chapterId={params.chapterId}
+                                courseSlug={slug!}
+                                chapterId={id!}
                                 isPublished={chapter.isPublished}
-                            /> */}
+                            />
                         </div>
                     </div>
                 </div>
