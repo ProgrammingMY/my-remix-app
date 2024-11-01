@@ -1,3 +1,4 @@
+import { Chapter, Course, Purchase, UserProgress } from "@prisma/client";
 import {
     Sidebar,
     SidebarContent,
@@ -10,56 +11,26 @@ import {
     SidebarTrigger,
     useSidebar,
 } from "~/components/ui/sidebar"
+import { CourseSidebarItem } from "./course-sidebar-item";
 
-import { Link, useLocation } from "@remix-run/react";
-import { BarChart, Book, Home, List, Search } from 'lucide-react';
-import { cn } from "~/lib/utils";
+interface CourseSidebarProps {
+    course: Course & {
+        chapters: (Chapter & {
+            userProgress: UserProgress[] | null
+        })[]
+    };
+    purchase: Purchase | null
+};
 
-const guestRoutes = [
-    {
-        href: "/user",
-        label: "Dashboard",
-        icon: Home,
-    },
-    {
-        href: "/search",
-        label: "Search",
-        icon: Search,
-    },
-    {
-        href: "/teacher/courses",
-        label: "Teacher",
-        icon: Book,
-    }
-]
-const teacherRoutes = [
-    {
-        href: "/teacher/courses",
-        label: "Courses",
-        icon: List,
-    },
-    {
-        href: "/teacher/analytics",
-        label: "Analytics",
-        icon: BarChart,
-    }
-]
-
-export function AppSidebar() {
-    const { pathname } = useLocation();
+const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
     const { state } = useSidebar();
-
-    const isTeacherPage = pathname?.includes('/teacher');
-
-    const items = isTeacherPage ? teacherRoutes : guestRoutes;
-
     return (
         <Sidebar variant="floating" collapsible="icon">
             <SidebarContent>
                 <SidebarGroup>
                     {state === "expanded" && (
                         <div className="flex justify-between items-center">
-                            <SidebarGroupLabel>Kelas Tech</SidebarGroupLabel>
+                            <SidebarGroupLabel>{course.title}</SidebarGroupLabel>
                             <SidebarTrigger />
                         </div>
                     )}
@@ -72,13 +43,17 @@ export function AppSidebar() {
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             )}
-                            {items.map((item) => (
-                                <SidebarMenuItem key={item.label}>
+                            {course.chapters.map((chapter) => (
+                                <SidebarMenuItem key={chapter.id}>
                                     <SidebarMenuButton asChild>
-                                        <Link to={item.href}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
+                                        <CourseSidebarItem
+                                            key={chapter.id}
+                                            id={chapter.id}
+                                            label={chapter.title}
+                                            isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
+                                            courseSlug={course.slug}
+                                            isLocked={!chapter.isFree && !purchase}
+                                        />
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
@@ -89,3 +64,7 @@ export function AppSidebar() {
         </Sidebar>
     )
 }
+
+
+
+export default CourseSidebar;
