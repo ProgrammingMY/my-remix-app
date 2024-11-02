@@ -5,13 +5,18 @@ import {
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarRail,
+    SidebarSeparator,
     SidebarTrigger,
     useSidebar,
 } from "~/components/ui/sidebar"
 import { CourseSidebarItem } from "./course-sidebar-item";
+import { CheckCircle, PlayCircle, Lock } from "lucide-react";
+import { Link, useLocation } from "@remix-run/react";
 
 interface CourseSidebarProps {
     course: Course & {
@@ -23,42 +28,33 @@ interface CourseSidebarProps {
 };
 
 const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
-    const { state } = useSidebar();
+    const { pathname } = useLocation();
     return (
-        <Sidebar variant="floating" collapsible="icon">
+        <Sidebar variant="inset" collapsible="offcanvas">
             <SidebarContent>
                 <SidebarGroup>
-                    {state === "expanded" && (
-                        <div className="flex justify-between items-center">
-                            <SidebarGroupLabel>{course.title}</SidebarGroupLabel>
-                            <SidebarTrigger />
-                        </div>
-                    )}
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {state === "collapsed" && (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <SidebarTrigger />
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )}
-                            {course.chapters.map((chapter) => (
-                                <SidebarMenuItem key={chapter.id}>
-                                    <SidebarMenuButton asChild>
-                                        <CourseSidebarItem
+                    <SidebarHeader className="text-lg font-medium line-clamp-1">{course.title}</SidebarHeader>
+                    <SidebarSeparator />
+                    <SidebarMenu>
+                        {course.chapters.map((chapter) => (
+                            <SidebarMenuItem key={chapter.id}>
+                                <SidebarMenuButton asChild isActive={pathname?.includes(chapter.id)}>
+                                    <Link to={`/courses/${course.slug}/chapters/${chapter.id}`}>
+                                        <PlayCircle />
+                                        <span>{chapter.title}</span>
+                                    </Link>
+                                    {/* <CourseSidebarItem
                                             key={chapter.id}
                                             id={chapter.id}
                                             label={chapter.title}
                                             isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
                                             courseSlug={course.slug}
                                             isLocked={!chapter.isFree && !purchase}
-                                        />
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
+                                        /> */}
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
         </Sidebar>

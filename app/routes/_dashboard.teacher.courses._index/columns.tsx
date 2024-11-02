@@ -80,7 +80,7 @@ export const columns: ColumnDef<Course>[] = [
     {
         id: "actions",
         cell: ({ row }) => {
-            const { id } = row.original;
+            const { slug } = row.original;
 
             return (
                 <DropdownMenu>
@@ -91,7 +91,7 @@ export const columns: ColumnDef<Course>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <Link to={`/teacher/courses/${id}`}>
+                        <Link to={`/teacher/courses/${slug}`}>
                             <DropdownMenuItem>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
