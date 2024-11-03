@@ -16,61 +16,127 @@ import { Input } from '~/components/ui/input';
 import { useState } from 'react'
 import { ArrowLeft, Loader2, PlusCircle } from 'lucide-react';
 import { cn } from '~/lib/utils';
-import { Chapter, Course } from '@prisma/client';
+import * as schema from '~/db/schema.server';
 import { ChaptersList } from './chapters-list';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
-import { LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
+import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
 import { createSupabaseServerClient } from '~/utils/supabase.server';
-import { createPrismaClient } from '~/utils/prisma.server';
 import { Link, Outlet, useFetcher, useLoaderData, useNavigate, useParams } from '@remix-run/react';
+import { drizzle } from 'drizzle-orm/d1';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { ChapterType, CourseType } from '~/db/schema.server';
 
 const formSchema = z.object({
     title: z.string().min(1),
 });
 
-export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
-    const { env } = context.cloudflare;
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
+export const action = async ({
+    request,
+    context,
+    params,
+}: ActionFunctionArgs) => {
+    try {
+        const { env } = context.cloudflare;
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+        const { supabaseClient, headers } = createSupabaseServerClient(
+            request,
+            env
+        );
 
-    if (!user) {
-        return redirect("/login", {
-            headers
-        });
-    };
+        const {
+            data: { user },
+        } = await supabaseClient.auth.getUser();
 
-    const db = createPrismaClient(env);
-
-    const course = await db.course.findUnique({
-        where: {
-            slug: params.slug,
-            userId: user.id,
-        },
-        include: {
-            chapters: {
-                orderBy: {
-                    position: "asc",
-                }
-            },
+        if (!user) {
+            return redirect("/login", {
+                headers,
+            });
         }
-    });
 
-    // if course is not found
-    if (!course) {
-        return redirect("/courses", {
-            headers
+        const db = drizzle(env.DB_drizzle, { schema });
+
+        const courseOwner = await db.query.Course.findFirst({
+            where: and(
+                eq(schema.Course.slug, params.slug!),
+                eq(schema.Course.userId, user.id)
+            ),
         });
+
+        if (!courseOwner) {
+            return jsonWithError("Error", "Course not found");
+        }
+
+        const values = (await request.json()) as ChapterType;
+
+        const lastChapter = await db.query.Chapter.findFirst({
+            where: and(eq(schema.Chapter.courseId, courseOwner.id)),
+            orderBy: [desc(schema.Chapter.position)],
+        });
+
+        const newPosition = lastChapter ? lastChapter.position + 1 : 1;
+
+        await db.insert(schema.Chapter).values({
+            ...values,
+            courseId: courseOwner.id,
+            position: newPosition,
+        });
+
+        return jsonWithSuccess("Success", "Chapter created successfully.");
+    } catch (error) {
+        console.log("[CHAPTER CREATE] ERROR", error);
+        return jsonWithError("Error", "Something went wrong.");
+    }
+};
+
+export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
+    try {
+        const { env } = context.cloudflare;
+        const { supabaseClient, headers } = createSupabaseServerClient(request, env);
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (!user) {
+            return redirect("/login", {
+                headers
+            });
+        };
+
+        const db = drizzle(env.DB_drizzle, { schema });
+
+        const course = await db.query.Course.findFirst({
+            where: and(
+                eq(schema.Course.slug, params.slug!),
+                eq(schema.Course.userId, user.id)
+            ),
+        });
+
+        if (!course) {
+            throw redirect("/courses", {
+                headers
+            });
+        }
+
+        const chapters = await db.query.Chapter.findMany({
+            where: eq(schema.Chapter.courseId, course.id),
+            orderBy: [asc(schema.Chapter.position)],
+        })
+
+
+        return json({
+            chapters,
+        })
+
+    } catch (error) {
+        console.log("[LOADER] ERROR", error);
+        throw jsonWithError("Error", "Something went wrong.");
     }
 
-    return ({
-        course,
-    })
 }
 
 
 const ChapterPage = () => {
-    const { course } = useLoaderData<typeof loader>();
+    const data = useLoaderData<typeof loader>();
+    const chapters = JSON.parse(JSON.stringify(data.chapters)) as ChapterType[];
     const fetcher = useFetcher();
     const navigate = useNavigate();
     const { slug } = useParams();
@@ -91,8 +157,8 @@ const ChapterPage = () => {
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             fetcher.submit(values, {
-                method: "post",
-                action: `/api/teacher/courses/${slug}/chapters`,
+                method: "POST",
+                encType: "application/json",
             });
             jsonWithSuccess("Success", "Chapter created successfully.");
         } catch (error) {
@@ -183,13 +249,13 @@ const ChapterPage = () => {
                 {!isCreating && (
                     <div className={cn(
                         "text-sm mt-2",
-                        !course.chapters.length && 'text-slate-500 italic'
+                        !chapters.length && 'text-slate-500 italic'
                     )}>
-                        {!course.chapters.length && "No chapters"}
+                        {!chapters.length && "No chapters"}
                         <ChaptersList
                             onEdit={onEdit}
                             onReorder={onReorder}
-                            items={course.chapters || []}
+                            items={chapters || []}
                         />
                     </div>
                 )}

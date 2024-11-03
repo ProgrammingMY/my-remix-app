@@ -2,17 +2,20 @@
 import { ArrowLeft, Eye, LayoutDashboard, Video } from 'lucide-react';
 import { IconBadge } from '~/components/icon-badge';
 import { Banner } from '~/components/banner';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
-import { createPrismaClient } from '~/utils/prisma.server';
+import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
 import { Link, useLoaderData, useParams } from '@remix-run/react';
 import { createSupabaseServerClient } from '~/utils/supabase.server';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { ChapterTitleForm } from './chapter-title-form';
 import { ChapterAccessForm } from './chapter-access-form';
-import { Chapter } from '@prisma/client';
 import { ChapterVideoForm } from './chapter-video-form';
+import * as schema from '~/db/schema.server';
 import Mux from '@mux/mux-node';
 import ChapterAction from './chapter-action';
+import { drizzle } from 'drizzle-orm/d1';
+import { and, eq } from 'drizzle-orm';
+import { ChapterType, MuxDataType } from '~/db/schema.server';
+
 
 export const action = async ({ context, params, request }: ActionFunctionArgs) => {
     try {
@@ -33,30 +36,31 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             });
         }
 
-        const db = createPrismaClient(env);
+        const db = drizzle(env.DB_drizzle, { schema });
 
-        const courseOwner = await db.course.findUnique({
-            where: {
-                slug: params.slug,
-                userId: user.id,
-            },
-        });
+
+        const courseOwner = await db.query.Course.findFirst({
+            where: and(
+                eq(schema.Course.slug, params.slug!),
+                eq(schema.Course.userId, user.id)
+            ),
+        })
 
         if (!courseOwner) {
-            return jsonWithError("Error", "Course not found");
+            throw jsonWithError("Error", "Course not found");
         }
 
         // DELETE METHOD
         if (request.method === "DELETE") {
-            const chapter = await db.chapter.findUnique({
-                where: {
-                    courseId: courseOwner.id,
-                    id: params.id,
-                },
+            const chapter = await db.query.Chapter.findFirst({
+                where: and(
+                    eq(schema.Chapter.id, params.id!),
+                    eq(schema.Chapter.courseId, courseOwner.id)
+                ),
             });
 
             if (!chapter) {
-                return jsonWithError("Error", "Course not found");
+                throw jsonWithError("Error", "Course not found");
             }
 
             if (chapter.uploadId) {
@@ -69,62 +73,53 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                     throw new Error("Mux is not configured");
                 }
 
-                const existingVideo = await db.muxData.findFirst({
-                    where: {
-                        chapterId: params.id,
-                    },
-                });
+                const existingVideo = await db.query.MuxData.findFirst({
+                    where: eq(schema.MuxData.chapterId, params.id!),
+                })
 
                 if (existingVideo) {
                     await mux.video.assets.delete(existingVideo.assetId);
-                    await db.muxData.delete({
-                        where: {
-                            chapterId: params.id,
-                            assetId: existingVideo.assetId,
-                        },
-                    });
+                    await db
+                        .delete(schema.MuxData)
+                        .where(and(
+                            eq(schema.MuxData.chapterId, params.id!),
+                            eq(schema.MuxData.assetId, existingVideo.assetId)
+                        ));
                 }
             }
+            await db.delete(schema.Chapter).where(eq(schema.Chapter.id, params.id!));
 
-            const deletedChapter = await db.chapter.delete({
-                where: {
-                    id: params.id,
-                },
-            });
-
-            const publishedChaptersinCourse = await db.chapter.findMany({
-                where: {
-                    courseId: params.id,
-                    isPublished: true,
-                },
+            const publishedChaptersinCourse = await db.query.Chapter.findMany({
+                where: and(
+                    eq(schema.Chapter.courseId, params.id!),
+                    eq(schema.Chapter.isPublished, true)
+                ),
             });
 
             if (!publishedChaptersinCourse.length) {
-                await db.course.update({
-                    where: {
-                        slug: params.slug,
-                    },
-                    data: {
+                await db.update(schema.Course)
+                    .set({
                         isPublished: false,
-                    },
-                });
+                    })
+                    .where(and(
+                        eq(schema.Course.slug, params.slug!),
+                    ))
             }
-
             return jsonWithSuccess("Success", "Chapter deleted successfully.");
         }
 
         // PATCH METHOD
-        const values = await request.json() as Chapter;
+        const values = await request.json() as ChapterType;
 
-        const chapter = await db.chapter.update({
-            where: {
-                id: params.id,
-                courseId: courseOwner.id,
-            },
-            data: {
+        const chapter = await db.update(schema.Chapter)
+            .set({
                 ...values,
-            },
-        });
+            })
+            .where(and(
+                eq(schema.Chapter.id, params.id!),
+                eq(schema.Chapter.courseId, courseOwner.id)
+            ))
+
 
         // if user upload video
         if (values.uploadId) {
@@ -138,11 +133,9 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             }
 
             // check if mux video already exists
-            const existingVideo = await db.muxData.findFirst({
-                where: {
-                    chapterId: params.id,
-                },
-            });
+            const existingVideo = await db.query.MuxData.findFirst({
+                where: eq(schema.MuxData.chapterId, params.id!),
+            })
 
             // delete video from mux if it exists
             if (existingVideo) {
@@ -152,44 +145,30 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                     await mux.video.assets.delete(existingVideo.assetId);
                 }
 
-                await db.muxData.delete({
-                    where: {
-                        chapterId: params.id,
-                    },
-                });
+                await db
+                    .delete(schema.MuxData)
+                    .where(and(
+                        eq(schema.MuxData.chapterId, params.id!),
+                    ));
+
             }
 
             const newMuxVideo = await mux.video.uploads.retrieve(values.uploadId);
 
             if (newMuxVideo.asset_id) {
                 // check if muxData already exist
-                const muxDataExist = await db.muxData.findFirst({
-                    where: {
+                await db.
+                    insert(schema.MuxData)
+                    .values({
                         assetId: newMuxVideo.asset_id,
-                    },
-                });
-
-                if (muxDataExist) {
-                    await db.muxData.update({
-                        where: {
-                            assetId: newMuxVideo.asset_id,
-                        },
-                        data: {
-                            chapterId: params.id!,
-                        },
-                    });
-                } else {
-                    await db.muxData.create({
-                        data: {
-                            assetId: newMuxVideo.asset_id,
-                            chapterId: params.id!,
-                        },
-                    });
-                }
+                        chapterId: params.id!,
+                    })
+                    .onConflictDoUpdate({
+                        target: schema.MuxData.chapterId,
+                        set: { chapterId: params.id! },
+                    })
             }
         }
-
-
 
         return jsonWithSuccess("Success", "Chapter updated successfully");
 
@@ -202,23 +181,53 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
 
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
-    const db = createPrismaClient(env);
 
-    const chapter = await db.chapter.findUnique({
-        where: {
-            id: params.id,
-            course: {
-                slug: params.slug
-            }
-        },
-        include: {
-            muxData: true,
-        }
-    });
+    const { supabaseClient, headers } = createSupabaseServerClient(
+        request,
+        env
+    );
+
+    const {
+        data: { user },
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+        throw redirect("/login", {
+            headers,
+        });
+    }
+
+    const db = drizzle(env.DB_drizzle, { schema });
+
+    const courseOwner = await db.query.Course.findFirst({
+        where: and(
+            eq(schema.Course.slug, params.slug!),
+            eq(schema.Course.userId, user.id)
+        ),
+    })
+
+    if (!courseOwner) {
+        throw jsonWithError("Error", "Course not found");
+    }
+
+
+
+    const chapter = await db.query.Chapter.findFirst({
+        where: and(
+            eq(schema.Chapter.id, params.id!),
+            eq(schema.Chapter.courseId, courseOwner.id)
+        ),
+    })
 
     if (!chapter) {
-        return redirect(`/teacher/courses/${params.slug}/chapters`);
+        throw redirect(`/teacher/courses/${params.slug}/chapters`);
     }
+
+    const muxData = await db.query.MuxData.findFirst({
+        where: and(
+            eq(schema.MuxData.chapterId, chapter.id),
+        ),
+    })
 
     const requiredField = [
         chapter.title,
@@ -232,15 +241,20 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const isCompleted = requiredField.every(Boolean);
 
-    return ({
+    return json({
         chapter,
+        muxData,
         isCompleted,
         completionText,
     })
 }
 
 const ChapterIdPage = () => {
-    const { chapter, isCompleted, completionText } = useLoaderData<typeof loader>();
+    const data = useLoaderData<typeof loader>();
+    const chapter = JSON.parse(JSON.stringify(data.chapter)) as ChapterType;
+    const muxData = data.muxData ? JSON.parse(JSON.stringify(data.muxData)) as MuxDataType : null;
+    const isCompleted = data.isCompleted;
+    const completionText = data.completionText;
     const { slug, id } = useParams();
 
     return (
@@ -315,7 +329,8 @@ const ChapterIdPage = () => {
                             </h2>
                         </div>
                         <ChapterVideoForm
-                            initialData={chapter}
+                            chapter={chapter}
+                            initialData={muxData}
                             courseSlug={slug!}
                             chapterId={id!}
                         />

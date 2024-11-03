@@ -4,15 +4,15 @@ import MuxPlayer from '@mux/mux-player-react'
 
 import React, { useEffect, useState } from 'react'
 import { Pencil, PlusCircle, Video } from 'lucide-react';
-import { Chapter, MuxData } from '@prisma/client';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
-import { UploadDropzone } from '~/components/ui/upload-dropzone';
 import MuxUploader from '@mux/mux-uploader-react';
 import { useFetcher } from '@remix-run/react';
+import { ChapterType, MuxDataType } from '~/db/schema.server';
 
 interface ChapterVideoProps {
-    initialData: Chapter & { muxData?: MuxData | null };
+    chapter: ChapterType;
+    initialData: MuxDataType | null;
     courseSlug: string;
     chapterId: string;
 }
@@ -28,7 +28,7 @@ const formSchema = z.object({
 });
 
 
-export const ChapterVideoForm = ({ initialData, courseSlug, chapterId }: ChapterVideoProps) => {
+export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }: ChapterVideoProps) => {
     const [isEditting, setIsEditting] = useState(false);
     const [uploadData, setUploadData] = useState<MuxUploaderProps>(null);
     const fetcher = useFetcher();
@@ -90,19 +90,21 @@ export const ChapterVideoForm = ({ initialData, courseSlug, chapterId }: Chapter
 
             </div>
             {!isEditting && (
-                !initialData.uploadId ? (
+                !chapter.uploadId ? (
                     <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
                         <Video className='h-10 w-10 text-slate-500' />
                     </div>
                 ) : (
                     <div className='relative aspect-video mt-2'>
-                        <MuxPlayer
-                            playbackId={initialData.muxData?.playbackId || ""}
-                        />
+                        {initialData && (
+                            <MuxPlayer
+                                playbackId={initialData.playbackId || ""}
+                            />
+                        )}
                     </div>
                 )
             )}
-            {initialData.uploadId && !isEditting && (
+            {chapter.uploadId && !isEditting && (
                 <div className='text-xs text-muted-foreground mt-2'>
                     Videos can take a few minutes to process. Refresh the page if video does not appear.
                 </div>
