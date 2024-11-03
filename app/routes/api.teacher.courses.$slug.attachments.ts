@@ -1,8 +1,10 @@
 import { Attachment } from "@prisma/client";
 import { ActionFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { drizzle } from "drizzle-orm/d1";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
-import { createPrismaClient } from "~/utils/prisma.server";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
+import * as schema from "~/db/schema.server";
+import { and, eq } from "drizzle-orm";
 
 export const action = async ({
   request,
@@ -27,13 +29,13 @@ export const action = async ({
       });
     }
 
-    const db = createPrismaClient(env);
+    const db = drizzle(env.DB_drizzle, { schema });
 
-    const courseOwner = await db.course.findUnique({
-      where: {
-        slug: params.slug,
-        userId: user.id,
-      },
+    const courseOwner = await db.query.Course.findFirst({
+      where: and(
+        eq(schema.Course.slug, params.slug!),
+        eq(schema.Course.userId, user.id)
+      ),
     });
 
     if (!courseOwner) {
@@ -44,12 +46,12 @@ export const action = async ({
     if (request.method === "POST") {
       const values = (await request.json()) as Attachment[];
 
-      const attachment = await db.attachment.createMany({
-        data: values.map((value) => ({
+      await db.insert(schema.Attachment).values(
+        values.map((value) => ({
           ...value,
           courseId: courseOwner.id,
-        })),
-      });
+        }))
+      );
 
       return jsonWithSuccess("Success", "Attachment created successfully.");
     }
@@ -59,12 +61,15 @@ export const action = async ({
       const { id } = (await request.json()) as {
         id: string;
       };
-      const attachment = await db.attachment.delete({
-        where: {
-          id,
-          courseId: courseOwner.id,
-        },
-      });
+
+      await db
+        .delete(schema.Attachment)
+        .where(
+          and(
+            eq(schema.Attachment.id, id),
+            eq(schema.Attachment.courseId, courseOwner.id)
+          )
+        );
 
       return jsonWithSuccess("Success", "Attachment deleted successfully.");
     }
