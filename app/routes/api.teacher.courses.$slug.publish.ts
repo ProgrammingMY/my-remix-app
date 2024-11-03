@@ -1,7 +1,9 @@
 import { ActionFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { drizzle } from "drizzle-orm/d1";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
-import { createPrismaClient } from "~/utils/prisma.server";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
+import * as schema from "~/db/schema.server";
+import { and, eq } from "drizzle-orm";
 
 export const action = async ({
   request,
@@ -26,55 +28,54 @@ export const action = async ({
       });
     }
 
-    const db = createPrismaClient(env);
-
     // for unpublish course
     const { wantPublish } = (await request.json()) as { wantPublish: boolean };
 
+    const db = drizzle(env.DB_drizzle, { schema });
+
     if (!wantPublish) {
-      const course = await db.course.findUnique({
-        where: {
-          slug: params.slug,
-          userId: user.id,
-        },
+      const course = await db.query.Course.findFirst({
+        where: and(
+          eq(schema.Course.slug, params.slug!),
+          eq(schema.Course.userId, user.id)
+        ),
       });
 
       if (!course) {
         return jsonWithError("Error", "Course not found");
       }
 
-      await db.course.update({
-        where: {
-          slug: params.slug,
-          userId: user.id,
-        },
-        data: {
+      await db
+        .update(schema.Course)
+        .set({
           isPublished: false,
-        },
-      });
+        })
+        .where(
+          and(
+            eq(schema.Course.slug, params.slug!),
+            eq(schema.Course.userId, user.id)
+          )
+        );
 
       return jsonWithSuccess("Success", "Course unpublished successfully.");
     } else {
       // for publish course
-      const course = await db.course.findUnique({
-        where: {
-          slug: params.slug,
-          userId: user.id,
-        },
-        include: {
-          chapters: {
-            include: {
-              muxData: true,
-            },
-          },
-        },
+      const course = await db.query.Course.findFirst({
+        where: and(
+          eq(schema.Course.slug, params.slug!),
+          eq(schema.Course.userId, user.id)
+        ),
       });
 
       if (!course) {
         return jsonWithError("Error", "Course not found");
       }
 
-      const hasPublishedChapters = course.chapters.some(
+      const chapters = await db.query.Chapter.findMany({
+        where: eq(schema.Chapter.courseId, course.id),
+      });
+
+      const hasPublishedChapters = chapters.some(
         (chapter) => chapter.isPublished
       );
 
@@ -88,15 +89,17 @@ export const action = async ({
         return jsonWithError("Error", "Missing required fields");
       }
 
-      await db.course.update({
-        where: {
-          slug: params.slug,
-          userId: user.id,
-        },
-        data: {
+      await db
+        .update(schema.Course)
+        .set({
           isPublished: true,
-        },
-      });
+        })
+        .where(
+          and(
+            eq(schema.Course.slug, params.slug!),
+            eq(schema.Course.userId, user.id)
+          )
+        );
 
       return jsonWithSuccess("Success", "Course published successfully.");
     }

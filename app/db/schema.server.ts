@@ -11,7 +11,9 @@ import {
 
 // User table
 export const user = sqliteTable("user", {
-  id: text("id").primaryKey().default(crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   email: text("email").notNull().unique(),
   name: text("name"),
   role: text("role").$type<"teacher" | "user">(),
@@ -27,7 +29,9 @@ export const user = sqliteTable("user", {
 export const Course = sqliteTable(
   "course",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text("userId").notNull(),
     title: text("title").notNull(),
     slug: text("slug").notNull().unique(),
@@ -56,7 +60,9 @@ export const Course = sqliteTable(
 
 // Category table
 export const Category = sqliteTable("category", {
-  id: text("id").primaryKey().default(crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull().unique(),
 });
 
@@ -64,7 +70,9 @@ export const Category = sqliteTable("category", {
 export const Chapter = sqliteTable(
   "chapter",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     title: text("title").notNull(),
     description: text("description"),
     uploadId: text("uploadId"),
@@ -94,7 +102,9 @@ export const Chapter = sqliteTable(
 export const Attachment = sqliteTable(
   "attachment",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     courseId: text("courseId")
       .notNull()
       .references(() => Course.id, { onDelete: "cascade" }),
@@ -118,7 +128,9 @@ export const Attachment = sqliteTable(
 export const MuxData = sqliteTable(
   "muxData",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     assetId: text("assetId").notNull().unique(),
     playbackId: text("playbackId"),
     chapterId: text("chapterId")
@@ -142,7 +154,9 @@ export const MuxData = sqliteTable(
 export const UserProgress = sqliteTable(
   "userProgress",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text("userId").notNull(),
     chapterId: text("chapterId")
       .notNull()
@@ -172,7 +186,9 @@ export const UserProgress = sqliteTable(
 export const Purchase = sqliteTable(
   "purchase",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
@@ -199,7 +215,9 @@ export const Purchase = sqliteTable(
 export const ToyyibCustomer = sqliteTable(
   "toyyibCustomer",
   {
-    id: text("id").primaryKey().default(crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()

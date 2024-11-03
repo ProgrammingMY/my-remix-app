@@ -98,8 +98,6 @@ export const action = async ({
         else if (request.method === "PATCH") {
             const values = await request.json() as CourseType;
 
-            console.log(values);
-
             await db.update(Course)
                 .set({ ...values })
                 .where(and(
@@ -207,11 +205,11 @@ export default function CourseForm() {
                         Complete all fields {completionText}
                     </span>
                 </div>
-                {/* <Action
+                <Action
                     disabled={!isComplete}
                     courseSlug={course.slug}
-                    isPublished={course.isPublished === 1}
-                /> */}
+                    isPublished={course.isPublished}
+                />
 
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-8'>
