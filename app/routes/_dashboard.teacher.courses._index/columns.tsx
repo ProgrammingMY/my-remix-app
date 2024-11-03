@@ -1,4 +1,3 @@
-import { Course } from "@prisma/client"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, Pencil } from "lucide-react"
 
@@ -14,9 +13,10 @@ import { Badge } from "~/components/ui/badge"
 import { cn } from "~/lib/utils"
 import { formatPrice } from "~/lib/format"
 import { Link } from "@remix-run/react"
+import { CourseType } from "~/db/schema.server"
 
 
-export const columns: ColumnDef<Course>[] = [
+export const columns: ColumnDef<CourseType>[] = [
     {
         accessorKey: "title",
         header: ({ column }) => {

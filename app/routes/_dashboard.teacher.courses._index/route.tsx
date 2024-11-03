@@ -1,17 +1,14 @@
-import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { Link, useLoaderData } from "@remix-run/react";
-import { PlusCircle } from "lucide-react";
-import { Button } from "~/components/ui/button";
+import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { useLoaderData } from "@remix-run/react";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
-import { PrismaClient } from "@prisma/client";
-import { PrismaD1 } from "@prisma/adapter-d1";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
-import { createPrismaClient } from "~/utils/prisma.server";
+import { drizzle } from "drizzle-orm/d1";
+import { Course, CourseType } from "~/db/schema.server";
+import { desc, eq } from "drizzle-orm";
 
 export const loader = async ({
   context,
-  params,
   request,
 }: LoaderFunctionArgs) => {
   const { env } = context.cloudflare;
@@ -22,27 +19,30 @@ export const loader = async ({
   } = await supabaseClient.auth.getUser();
 
   if (!user) {
-    return redirect("/login", {
+    throw redirect("/login", {
       headers,
     });
   }
 
-  const db = createPrismaClient(env);
+  const db = drizzle(env.DB_drizzle, {
+    schema: { Course },
+  });
 
-  const courses = await db.course.findMany({
-    where: {
-      userId: user.id
-    },
-    orderBy: {
-      createdAt: "desc",
-    }
-  })
+  const courses = await db
+    .select()
+    .from(Course)
+    .where(
+      eq(Course.userId, user.id)
+    )
+    .orderBy(desc(Course.createdAt))
 
-  return { courses };
+  return json({ courses });
 };
 
 export default function TeacherCourses() {
-  const { courses } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const courses = JSON.parse(JSON.stringify(data.courses)) as CourseType[];
+
   return (
     <>
       <DataTable columns={columns} data={courses} />
