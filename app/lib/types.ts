@@ -1,10 +1,8 @@
 import { Attachment, Chapter, Course } from "@prisma/client";
+import { CourseType } from "~/db/schema.server";
 
 export interface CourseFormProps {
-  initialData: {
-    chapters: any[];
-    attachments: any[];
-  } & Course;
+  initialData: CourseType;
   courseSlug: string;
 }
 export interface ChapterFormProps {
