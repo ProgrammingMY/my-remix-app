@@ -14,9 +14,9 @@ import { Input } from '~/components/ui/input';
 
 import { useState } from 'react'
 import { Pencil } from 'lucide-react';
-import { CourseFormProps } from '~/lib/types';
 import { useFetcher, useNavigate } from '@remix-run/react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
+import { CourseFormProps } from '~/lib/types';
 
 // 30 alphanumeric characters and spaces and _ only
 const formSchema = z.object({

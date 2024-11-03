@@ -4,9 +4,10 @@ import { cn } from '~/lib/utils';
 import { Chapter, Course } from '@prisma/client';
 import { ChaptersList } from './chapters-list';
 import { useNavigate } from '@remix-run/react';
+import { ChapterType } from '~/db/schema.server';
 
 interface ChapterFormProps {
-    initialData: Course & { chapters: Chapter[] };
+    initialData: ChapterType[];
     courseSlug: string;
 }
 
@@ -23,17 +24,17 @@ export const ChaptersForm = ({ initialData, courseSlug }: ChapterFormProps) => {
             <div className='font-medium flex items-center justify-between'>
                 Course Chapters
                 <Button onClick={onEdit} variant='ghost' type='button'>
-                    <ExternalLinkIcon className='h-4 w-4'/>
+                    <ExternalLinkIcon className='h-4 w-4' />
                     Go to chapters editor
                 </Button>
             </div>
             <div className={cn(
                 "text-sm mt-2",
-                !initialData.chapters.length && 'text-slate-500 italic'
+                !initialData.length && 'text-slate-500 italic'
             )}>
-                {!initialData.chapters.length && "No chapters"}
+                {!initialData.length && "No chapters"}
                 <ChaptersList
-                    items={initialData.chapters || []}
+                    items={initialData || []}
                 />
             </div>
         </div >

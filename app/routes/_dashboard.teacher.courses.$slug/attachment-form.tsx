@@ -8,9 +8,10 @@ import { Attachment, Course } from '@prisma/client';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { UploadDropzone } from '~/components/ui/upload-dropzone';
 import { useFetcher, useParams } from '@remix-run/react';
+import { AttachmentType } from '~/db/schema.server';
 
 interface AttachmentFormProps {
-    initialData: Course & { attachments: Attachment[] };
+    initialData: AttachmentType[];
     courseSlug: string;
 }
 
@@ -108,12 +109,12 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
             </div>
             {!isEditting && (
                 <>
-                    {initialData.attachments.length === 0 && (
+                    {initialData.length === 0 && (
                         <p className='text-sm mt-2 text-slate-500 italic'>No attachments</p>
                     )}
-                    {initialData.attachments.length > 0 && (
+                    {initialData.length > 0 && (
                         <div className='space-y-2'>
-                            {initialData.attachments.map((attachment) => (
+                            {initialData.map((attachment) => (
                                 <div key={attachment.id} className='flex items-center p-3 w-full bg-sky-100 border text-sky-700 rounded-md'>
                                     <File className='h-4 w-4 mr-2 flex-shrink-0' />
                                     <p className='text-xs line-clamp-1'>{attachment.fileName}</p>

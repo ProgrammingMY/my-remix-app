@@ -1,6 +1,8 @@
 import Mux from "@mux/mux-node";
 import { ActionFunctionArgs, json } from "@remix-run/cloudflare";
-import { createPrismaClient } from "~/utils/prisma.server";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "~/db/schema.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
   try {
@@ -27,37 +29,38 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     if (event.type === "video.asset.ready") {
       // add to database
-      const db = createPrismaClient(env);
       const playbackIds = event.data.playback_ids;
       if (Array.isArray(playbackIds)) {
         const playbackId = playbackIds.find((id) => id.policy === "public") as {
           policy: string;
           id: string;
         };
+
+        const db = drizzle(env.DB_drizzle, { schema });
+
         if (playbackId) {
-          // update db
-          const muxDataExist = await db.muxData.findFirst({
-            where: {
-              assetId: event.object.id,
-            },
+          const muxDataExist = await db.query.MuxData.findFirst({
+            where: eq(schema.MuxData.assetId, event.object.id),
           });
 
           if (muxDataExist) {
-            await db.muxData.update({
-              where: {
-                assetId: event.object.id,
-              },
-              data: {
+            await db
+              .update(schema.MuxData)
+              .set({
                 playbackId: playbackId.id,
-              },
-            });
+              })
+              .where(eq(schema.MuxData.assetId, event.object.id));
           } else {
-            await db.muxData.create({
-              data: {
+            await db
+              .insert(schema.MuxData)
+              .values({
                 assetId: event.object.id,
                 playbackId: playbackId.id,
-              },
-            });
+              })
+              .onConflictDoUpdate({
+                target: schema.MuxData.playbackId,
+                set: { playbackId: playbackId.id },
+              });
           }
         }
       }

@@ -1,19 +1,28 @@
 import { IconBadge } from "~/components/icon-badge";
 import TitleForm from "./title-form";
 import { CircleDollarSign, File, LayoutDashboard, ListCheck } from "lucide-react";
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
-import { createPrismaClient } from "~/utils/prisma.server";
 import { useLoaderData } from "@remix-run/react";
 import { DescriptionForm } from "./description-form";
 import { PriceForm } from "./price-form";
 import { ImageForm } from "./image-form";
 import { AttachmentForm } from "./attachment-form";
 import { ChaptersForm } from "./chapters-form";
-import { jsonWithError, jsonWithSuccess } from "remix-toast";
-import { Course } from "@prisma/client";
+import { jsonWithError, jsonWithSuccess, redirectWithSuccess } from "remix-toast";
 import Mux from "@mux/mux-node";
 import Action from "./action";
+import { drizzle } from "drizzle-orm/d1";
+import { Course, Attachment, Chapter, MuxData, CourseType, ChapterType, AttachmentType } from "~/db/schema.server";
+import { and, asc, desc, eq } from "drizzle-orm";
+
+interface CourseFormLoaderData {
+    course: CourseType;
+    chapters: ChapterType[];
+    attachments: AttachmentType[];
+    isComplete: boolean;
+    completionText: string;
+}
 
 export const action = async ({
     context,
@@ -38,27 +47,27 @@ export const action = async ({
             });
         }
 
-        const db = createPrismaClient(env);
+        const db = drizzle(env.DB_drizzle, { schema: { Course, Attachment, Chapter, MuxData } });
 
         // DELETE METHOD
         if (request.method === "DELETE") {
-            const course = await db.course.findUnique({
-                where: {
-                    id: params.courseId,
-                    userId: user.id,
-                },
-                include: {
-                    chapters: {
-                        include: {
-                            muxData: true,
-                        },
-                    },
-                },
-            });
+            const course = await db.query.Course.findFirst({
+                where: and(
+                    eq(Course.slug, params.slug!),
+                    eq(Course.userId, user.id)
+                ),
+            })
 
             if (!course) {
                 return jsonWithError("Error", "Course not found");
             }
+
+            const chapters = await db.query.Chapter.findMany({
+                where: eq(Chapter.courseId, course.id),
+                orderBy: [asc(Chapter.position)],
+            })
+
+
 
             const mux = new Mux({
                 tokenId: env.MUX_TOKEN_ID,
@@ -69,37 +78,34 @@ export const action = async ({
                 throw new Error("Mux is not configured");
             }
 
-            for (const chapter of course.chapters) {
-                if (chapter.muxData?.assetId) {
-                    await mux.video.assets.delete(chapter.muxData.assetId);
+            for (const chapter of chapters) {
+                const muxData = await db.query.MuxData.findFirst({
+                    where: and(
+                        eq(MuxData.chapterId, chapter.id),
+                    )
+                })
+                if (muxData?.assetId) {
+                    await mux.video.assets.delete(muxData.assetId);
                 }
             }
 
-            await db.course.delete({
-                where: {
-                    id: params.courseId,
-                },
-            });
+            await db.delete(Course).where(eq(Course.slug, course.slug));
 
-            return jsonWithSuccess(
-                { result: "Course deleted successfully." },
-                {
-                    message: "Success",
-                }
-            );
+            return redirectWithSuccess("/teacher/courses", "Course deleted successfully");
         }
 
         // PATCH METHOD
         else if (request.method === "PATCH") {
-            const values = await request.json() as Course;
+            const values = await request.json() as CourseType;
 
-            await db.course.update({
-                where: {
-                    slug: params.slug,
-                    userId: user.id,
-                },
-                data: { ...values },
-            });
+            console.log(values);
+
+            await db.update(Course)
+                .set({ ...values })
+                .where(and(
+                    eq(Course.slug, params.slug!),
+                    eq(Course.userId, user.id)
+                ))
 
             return jsonWithSuccess(
                 { result: "Course updated successfully." },
@@ -130,30 +136,34 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         });
     };
 
-    const db = createPrismaClient(env);
-
-    const course = await db.course.findUnique({
-        where: {
-            slug: params.slug,
-            userId: user.id,
-        },
-        include: {
-            chapters: {
-                orderBy: {
-                    position: "asc",
-                }
-            },
-            attachments: {
-                orderBy: {
-                    createdAt: "desc",
-                },
-            },
-        }
+    const db = drizzle(env.DB_drizzle, {
+        schema: { Course, Attachment, Chapter },
     });
 
+    const course = await db.query.Course.findFirst({
+        where: and(
+            eq(Course.slug, params.slug!),
+            eq(Course.userId, user.id),
+        ),
+    })
+
     if (!course) {
-        return redirect("/teacher/courses");
+        return redirect("/teacher/courses", {
+            headers
+        });
     }
+
+    const chapters = await db.query.Chapter.findMany({
+        where: eq(Chapter.courseId, course.id),
+        orderBy: [asc(Chapter.position)],
+    })
+
+    const attachments = await db.query.Attachment.findMany({
+        where: eq(Attachment.courseId, course.id),
+        orderBy: [desc(Attachment.createdAt)],
+    })
+
+
 
     const requiredField = [
         course.title,
@@ -161,7 +171,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         course.imageUrl,
         course.price,
         // course.categoryId,
-        course.chapters.some(chapter => chapter.isPublished)
+        chapters.some(chapter => chapter.isPublished)
     ];
 
     const totalField = requiredField.length;
@@ -171,15 +181,22 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const isComplete = requiredField.every(Boolean);
 
-    return ({
+    return json({
         course,
+        chapters,
+        attachments,
         isComplete,
         completionText,
     })
 }
 
 export default function CourseForm() {
-    const { course, isComplete, completionText } = useLoaderData<typeof loader>();
+    const data = useLoaderData<typeof loader>();
+    const course = JSON.parse(JSON.stringify(data.course)) as CourseType;
+    const chapters = JSON.parse(JSON.stringify(data.chapters)) as ChapterType[];
+    const attachments = JSON.parse(JSON.stringify(data.attachments)) as AttachmentType[];
+    const isComplete = data.isComplete;
+    const completionText = data.completionText;
 
     return (
         <div>
@@ -190,11 +207,11 @@ export default function CourseForm() {
                         Complete all fields {completionText}
                     </span>
                 </div>
-                <Action
+                {/* <Action
                     disabled={!isComplete}
                     courseSlug={course.slug}
-                    isPublished={course.isPublished}
-                />
+                    isPublished={course.isPublished === 1}
+                /> */}
 
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-8'>
@@ -234,7 +251,7 @@ export default function CourseForm() {
                             </h2>
                         </div>
                         <ChaptersForm
-                            initialData={course}
+                            initialData={chapters}
                             courseSlug={course.slug}
                         />
                     </div>
@@ -256,7 +273,7 @@ export default function CourseForm() {
                             </h2>
                         </div>
                         <AttachmentForm
-                            initialData={course}
+                            initialData={attachments}
                             courseSlug={course.slug}
                         />
                     </div>
