@@ -1,14 +1,12 @@
-import { PrismaD1 } from '@prisma/adapter-d1'
-import { PrismaClient } from '@prisma/client'
+import { drizzle } from "drizzle-orm/d1";
 import { ActionFunctionArgs, json, redirect } from '@remix-run/cloudflare'
 import { Form, Link, useActionData, useLoaderData } from '@remix-run/react'
-import React from 'react'
-import { useForm } from 'react-hook-form'
 import { redirectWithError, redirectWithSuccess } from 'remix-toast'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { createSupabaseServerClient } from '~/utils/supabase.server'
+import { Course } from "~/db/schema.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
@@ -25,20 +23,21 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
             });
         }
 
-        const adapter = new PrismaD1(env.DB);
-        const prisma = new PrismaClient({ adapter });
-
         const newTitle = formData.get("title") as string;
         const slug = newTitle.toLowerCase().replaceAll(" ", "-");
 
-        const course = await prisma.course.create({
-            data: {
+        const db = drizzle(env.DB_drizzle);
+
+        const course = await db.insert(Course)
+            .values({
                 userId: user.id,
                 title: formData.get("title") as string,
                 slug: slug,
-            }
-        });
-        return redirectWithSuccess(`/teacher/courses/${course.slug}`, "Course created successfully");
+            })
+            .returning();
+
+
+        return redirectWithSuccess(`/teacher/courses/${course[0].slug}`, "Course created successfully");
 
     } catch (error) {
         return redirectWithError("/teacher/courses", "Something went wrong");
