@@ -1,4 +1,9 @@
-import { sql, type InferInsertModel, type InferSelectModel } from "drizzle-orm";
+import {
+  relations,
+  sql,
+  type InferInsertModel,
+  type InferSelectModel,
+} from "drizzle-orm";
 import {
   text,
   sqliteTable,
@@ -17,16 +22,16 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   name: text("name"),
   role: text("role").$type<"teacher" | "user">(),
-  createdAt: integer("created_at", { mode: "timestamp" })
+  createdAt: text("created_at")
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .default(sql`(current_timestamp)`),
+  updatedAt: text("updated_at")
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(sql`(current_timestamp)`),
 });
 
 // Course table
-export const Course = sqliteTable(
+export const course = sqliteTable(
   "course",
   {
     id: text("id")
@@ -41,15 +46,15 @@ export const Course = sqliteTable(
     isPublished: integer("isPublished", { mode: "boolean" })
       .default(false)
       .notNull(),
-    categoryId: text("categoryId").references(() => Category.id, {
+    categoryId: text("categoryId").references(() => category.id, {
       onDelete: "cascade",
     }),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -58,16 +63,32 @@ export const Course = sqliteTable(
   }
 );
 
+// Course relation
+export const course_relation = relations(course, ({ one, many }) => ({
+  category: one(category, {
+    fields: [course.categoryId],
+    references: [category.id],
+  }),
+  chapters: many(chapter),
+  attachments: many(attachment),
+  purchases: many(purchase),
+}));
+
 // Category table
-export const Category = sqliteTable("category", {
+export const category = sqliteTable("category", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull().unique(),
 });
 
+// Category relation
+export const category_relation = relations(category, ({ many }) => ({
+  courses: many(course),
+}));
+
 // Chapter table
-export const Chapter = sqliteTable(
+export const chapter = sqliteTable(
   "chapter",
   {
     id: text("id")
@@ -83,13 +104,13 @@ export const Chapter = sqliteTable(
     isFree: integer("isFree", { mode: "boolean" }).default(false).notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => Course.id, { onDelete: "cascade" }),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+      .references(() => course.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -98,8 +119,14 @@ export const Chapter = sqliteTable(
   }
 );
 
+// Chapter relation
+export const chapter_relation = relations(chapter, ({ one, many }) => ({
+  course: one(course, { fields: [chapter.courseId], references: [course.id] }),
+  userProgress: many(userProgress),
+}));
+
 // Attachment table
-export const Attachment = sqliteTable(
+export const attachment = sqliteTable(
   "attachment",
   {
     id: text("id")
@@ -107,15 +134,15 @@ export const Attachment = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     courseId: text("courseId")
       .notNull()
-      .references(() => Course.id, { onDelete: "cascade" }),
+      .references(() => course.id, { onDelete: "cascade" }),
     fileUrl: text("fileUrl").notNull(),
     fileName: text("fileName").notNull(),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -124,8 +151,16 @@ export const Attachment = sqliteTable(
   }
 );
 
+// Attachment relation
+export const attachment_relation = relations(attachment, ({ one }) => ({
+  course: one(course, {
+    fields: [attachment.courseId],
+    references: [course.id],
+  }),
+}));
+
 // MuxData table
-export const MuxData = sqliteTable(
+export const muxData = sqliteTable(
   "muxData",
   {
     id: text("id")
@@ -135,13 +170,13 @@ export const MuxData = sqliteTable(
     playbackId: text("playbackId"),
     chapterId: text("chapterId")
       .unique()
-      .references(() => Chapter.id, { onDelete: "cascade" }),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+      .references(() => chapter.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -150,8 +185,16 @@ export const MuxData = sqliteTable(
   }
 );
 
+// MuxData relation
+export const muxData_relation = relations(muxData, ({ one }) => ({
+  chapter: one(chapter, {
+    fields: [muxData.chapterId],
+    references: [chapter.id],
+  }),
+}));
+
 // UserProgress table
-export const UserProgress = sqliteTable(
+export const userProgress = sqliteTable(
   "userProgress",
   {
     id: text("id")
@@ -160,16 +203,16 @@ export const UserProgress = sqliteTable(
     userId: text("userId").notNull(),
     chapterId: text("chapterId")
       .notNull()
-      .references(() => Chapter.id, { onDelete: "cascade" }),
+      .references(() => chapter.id, { onDelete: "cascade" }),
     isCompleted: integer("isCompleted", { mode: "boolean" })
       .default(false)
       .notNull(),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -182,8 +225,16 @@ export const UserProgress = sqliteTable(
   }
 );
 
+// UserProgress relation
+export const userProgress_relation = relations(userProgress, ({ one }) => ({
+  chapter: one(chapter, {
+    fields: [userProgress.chapterId],
+    references: [chapter.id],
+  }),
+}));
+
 // Purchase table
-export const Purchase = sqliteTable(
+export const purchase = sqliteTable(
   "purchase",
   {
     id: text("id")
@@ -192,13 +243,13 @@ export const Purchase = sqliteTable(
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => Course.id, { onDelete: "cascade" }),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+      .references(() => course.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -211,8 +262,13 @@ export const Purchase = sqliteTable(
   }
 );
 
+// Purchase relation
+export const purchase_relation = relations(purchase, ({ one }) => ({
+  course: one(course, { fields: [purchase.courseId], references: [course.id] }),
+}));
+
 // ToyyibCustomer table
-export const ToyyibCustomer = sqliteTable(
+export const toyyibCustomer = sqliteTable(
   "toyyibCustomer",
   {
     id: text("id")
@@ -221,15 +277,15 @@ export const ToyyibCustomer = sqliteTable(
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => Course.id, { onDelete: "cascade" }),
+      .references(() => course.id, { onDelete: "cascade" }),
     billCode: text("billCode").notNull(),
     transactionId: text("transactionId").notNull(),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+    createdAt: text("created_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(sql`(current_timestamp)`),
   },
   (table) => {
     return {
@@ -241,7 +297,16 @@ export const ToyyibCustomer = sqliteTable(
   }
 );
 
-export type CourseType = typeof Course.$inferSelect;
-export type ChapterType = typeof Chapter.$inferSelect;
-export type AttachmentType = typeof Attachment.$inferSelect;
-export type MuxDataType = typeof MuxData.$inferSelect;
+// toyyibCustomer relation
+export const toyyibCustomer_relation = relations(toyyibCustomer, ({ one }) => ({
+  course: one(course, {
+    fields: [toyyibCustomer.courseId],
+    references: [course.id],
+  }),
+}));
+
+export type CourseType = typeof course.$inferSelect;
+export type ChapterType = typeof chapter.$inferSelect;
+export type AttachmentType = typeof attachment.$inferSelect;
+export type MuxDataType = typeof muxData.$inferSelect;
+export type CategoryType = typeof category.$inferSelect;
