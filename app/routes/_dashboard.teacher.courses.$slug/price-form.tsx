@@ -17,15 +17,15 @@ import React, { useState } from 'react'
 import { Pencil } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { formatPrice } from '~/lib/format';
-import { Course } from '@prisma/client';
 import { useFetcher, useNavigate } from '@remix-run/react';
+import { CourseType } from '~/db/schema.server';
 
 const formSchema = z.object({
     price: z.coerce.number().min(0),
 });
 
 interface PriceFormProps {
-    initialData: Course;
+    initialData: CourseType;
     courseSlug: string;
 }
 

@@ -13,8 +13,9 @@ import { jsonWithError, jsonWithSuccess, redirectWithSuccess } from "remix-toast
 import Mux from "@mux/mux-node";
 import Action from "./action";
 import { drizzle } from "drizzle-orm/d1";
-import { Course, Attachment, Chapter, MuxData, CourseType, ChapterType, AttachmentType } from "~/db/schema.server";
+import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { AttachmentType, ChapterType, CourseType } from "~/db/schema.server";
 
 interface CourseFormLoaderData {
     course: CourseType;
@@ -47,27 +48,23 @@ export const action = async ({
             });
         }
 
-        const db = drizzle(env.DB_drizzle, { schema: { Course, Attachment, Chapter, MuxData } });
+        const db = drizzle(env.DB_drizzle, { schema });
 
         // DELETE METHOD
         if (request.method === "DELETE") {
-            const course = await db.query.Course.findFirst({
+            const course = await db.query.course.findFirst({
                 where: and(
-                    eq(Course.slug, params.slug!),
-                    eq(Course.userId, user.id)
+                    eq(schema.course.slug, params.slug!),
+                    eq(schema.course.userId, user.id)
                 ),
+                with: {
+                    chapters: true
+                }
             })
 
             if (!course) {
                 return jsonWithError("Error", "Course not found");
             }
-
-            const chapters = await db.query.Chapter.findMany({
-                where: eq(Chapter.courseId, course.id),
-                orderBy: [asc(Chapter.position)],
-            })
-
-
 
             const mux = new Mux({
                 tokenId: env.MUX_TOKEN_ID,
@@ -78,10 +75,10 @@ export const action = async ({
                 throw new Error("Mux is not configured");
             }
 
-            for (const chapter of chapters) {
-                const muxData = await db.query.MuxData.findFirst({
+            for (const chapter of course.chapters) {
+                const muxData = await db.query.muxData.findFirst({
                     where: and(
-                        eq(MuxData.chapterId, chapter.id),
+                        eq(schema.muxData.chapterId, chapter.id),
                     )
                 })
                 if (muxData?.assetId) {
@@ -89,7 +86,7 @@ export const action = async ({
                 }
             }
 
-            await db.delete(Course).where(eq(Course.slug, course.slug));
+            await db.delete(schema.course).where(eq(schema.course.slug, course.slug));
 
             return redirectWithSuccess("/teacher/courses", "Course deleted successfully");
         }
@@ -98,11 +95,11 @@ export const action = async ({
         else if (request.method === "PATCH") {
             const values = await request.json() as CourseType;
 
-            await db.update(Course)
+            await db.update(schema.course)
                 .set({ ...values })
                 .where(and(
-                    eq(Course.slug, params.slug!),
-                    eq(Course.userId, user.id)
+                    eq(schema.course.slug, params.slug!),
+                    eq(schema.course.userId, user.id)
                 ))
 
             return jsonWithSuccess(
@@ -135,14 +132,22 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
     };
 
     const db = drizzle(env.DB_drizzle, {
-        schema: { Course, Attachment, Chapter },
+        schema,
     });
 
-    const course = await db.query.Course.findFirst({
+    const course = await db.query.course.findFirst({
         where: and(
-            eq(Course.slug, params.slug!),
-            eq(Course.userId, user.id),
+            eq(schema.course.slug, params.slug!),
+            eq(schema.course.userId, user.id)
         ),
+        with: {
+            chapters: {
+                orderBy: [asc(schema.chapter.position)]
+            },
+            attachments: {
+                orderBy: [desc(schema.attachment.createdAt)]
+            }
+        }
     })
 
     if (!course) {
@@ -151,25 +156,13 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         });
     }
 
-    const chapters = await db.query.Chapter.findMany({
-        where: eq(Chapter.courseId, course.id),
-        orderBy: [asc(Chapter.position)],
-    })
-
-    const attachments = await db.query.Attachment.findMany({
-        where: eq(Attachment.courseId, course.id),
-        orderBy: [desc(Attachment.createdAt)],
-    })
-
-
-
     const requiredField = [
         course.title,
         course.description,
         course.imageUrl,
         course.price,
         // course.categoryId,
-        chapters.some(chapter => chapter.isPublished)
+        course.chapters.some(chapter => chapter.isPublished)
     ];
 
     const totalField = requiredField.length;
@@ -179,22 +172,15 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const isComplete = requiredField.every(Boolean);
 
-    return json({
+    return {
         course,
-        chapters,
-        attachments,
         isComplete,
         completionText,
-    })
+    }
 }
 
 export default function CourseForm() {
-    const data = useLoaderData<typeof loader>();
-    const course = JSON.parse(JSON.stringify(data.course)) as CourseType;
-    const chapters = JSON.parse(JSON.stringify(data.chapters)) as ChapterType[];
-    const attachments = JSON.parse(JSON.stringify(data.attachments)) as AttachmentType[];
-    const isComplete = data.isComplete;
-    const completionText = data.completionText;
+    const { course, isComplete, completionText } = useLoaderData<typeof loader>();
 
     return (
         <div>
@@ -249,7 +235,7 @@ export default function CourseForm() {
                             </h2>
                         </div>
                         <ChaptersForm
-                            initialData={chapters}
+                            initialData={course}
                             courseSlug={course.slug}
                         />
                     </div>
@@ -271,7 +257,7 @@ export default function CourseForm() {
                             </h2>
                         </div>
                         <AttachmentForm
-                            initialData={attachments}
+                            initialData={course}
                             courseSlug={course.slug}
                         />
                     </div>

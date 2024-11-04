@@ -55,10 +55,10 @@ export const action = async ({
 
         const db = drizzle(env.DB_drizzle, { schema });
 
-        const courseOwner = await db.query.Course.findFirst({
+        const courseOwner = await db.query.course.findFirst({
             where: and(
-                eq(schema.Course.slug, params.slug!),
-                eq(schema.Course.userId, user.id)
+                eq(schema.course.slug, params.slug!),
+                eq(schema.course.userId, user.id)
             ),
         });
 
@@ -68,14 +68,14 @@ export const action = async ({
 
         const values = (await request.json()) as ChapterType;
 
-        const lastChapter = await db.query.Chapter.findFirst({
-            where: and(eq(schema.Chapter.courseId, courseOwner.id)),
-            orderBy: [desc(schema.Chapter.position)],
+        const lastChapter = await db.query.chapter.findFirst({
+            where: and(eq(schema.chapter.courseId, courseOwner.id)),
+            orderBy: [desc(schema.chapter.position)],
         });
 
         const newPosition = lastChapter ? lastChapter.position + 1 : 1;
 
-        await db.insert(schema.Chapter).values({
+        await db.insert(schema.chapter).values({
             ...values,
             courseId: courseOwner.id,
             position: newPosition,
@@ -103,11 +103,16 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
         const db = drizzle(env.DB_drizzle, { schema });
 
-        const course = await db.query.Course.findFirst({
+        const course = await db.query.course.findFirst({
             where: and(
-                eq(schema.Course.slug, params.slug!),
-                eq(schema.Course.userId, user.id)
+                eq(schema.course.slug, params.slug!),
+                eq(schema.course.userId, user.id)
             ),
+            with: {
+                chapters: {
+                    orderBy: [asc(schema.chapter.position)]
+                }
+            }
         });
 
         if (!course) {
@@ -116,15 +121,9 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
             });
         }
 
-        const chapters = await db.query.Chapter.findMany({
-            where: eq(schema.Chapter.courseId, course.id),
-            orderBy: [asc(schema.Chapter.position)],
-        })
-
-
-        return json({
-            chapters,
-        })
+        return {
+            course,
+        }
 
     } catch (error) {
         console.log("[LOADER] ERROR", error);
@@ -135,8 +134,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
 
 const ChapterPage = () => {
-    const data = useLoaderData<typeof loader>();
-    const chapters = JSON.parse(JSON.stringify(data.chapters)) as ChapterType[];
+    const { course } = useLoaderData<typeof loader>();
     const fetcher = useFetcher();
     const navigate = useNavigate();
     const { slug } = useParams();
@@ -249,13 +247,13 @@ const ChapterPage = () => {
                 {!isCreating && (
                     <div className={cn(
                         "text-sm mt-2",
-                        !chapters.length && 'text-slate-500 italic'
+                        !course.chapters.length && 'text-slate-500 italic'
                     )}>
-                        {!chapters.length && "No chapters"}
+                        {!course.chapters.length && "No chapters"}
                         <ChaptersList
                             onEdit={onEdit}
                             onReorder={onReorder}
-                            items={chapters || []}
+                            items={course.chapters || []}
                         />
                     </div>
                 )}

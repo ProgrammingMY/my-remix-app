@@ -39,10 +39,10 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
         const db = drizzle(env.DB_drizzle, { schema });
 
 
-        const courseOwner = await db.query.Course.findFirst({
+        const courseOwner = await db.query.course.findFirst({
             where: and(
-                eq(schema.Course.slug, params.slug!),
-                eq(schema.Course.userId, user.id)
+                eq(schema.course.slug, params.slug!),
+                eq(schema.course.userId, user.id)
             ),
         })
 
@@ -52,10 +52,10 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
 
         // DELETE METHOD
         if (request.method === "DELETE") {
-            const chapter = await db.query.Chapter.findFirst({
+            const chapter = await db.query.chapter.findFirst({
                 where: and(
-                    eq(schema.Chapter.id, params.id!),
-                    eq(schema.Chapter.courseId, courseOwner.id)
+                    eq(schema.chapter.id, params.id!),
+                    eq(schema.chapter.courseId, courseOwner.id)
                 ),
             });
 
@@ -73,36 +73,36 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                     throw new Error("Mux is not configured");
                 }
 
-                const existingVideo = await db.query.MuxData.findFirst({
-                    where: eq(schema.MuxData.chapterId, params.id!),
+                const existingVideo = await db.query.muxData.findFirst({
+                    where: eq(schema.muxData.chapterId, params.id!),
                 })
 
                 if (existingVideo) {
                     await mux.video.assets.delete(existingVideo.assetId);
                     await db
-                        .delete(schema.MuxData)
+                        .delete(schema.muxData)
                         .where(and(
-                            eq(schema.MuxData.chapterId, params.id!),
-                            eq(schema.MuxData.assetId, existingVideo.assetId)
+                            eq(schema.muxData.chapterId, params.id!),
+                            eq(schema.muxData.assetId, existingVideo.assetId)
                         ));
                 }
             }
-            await db.delete(schema.Chapter).where(eq(schema.Chapter.id, params.id!));
+            await db.delete(schema.chapter).where(eq(schema.chapter.id, params.id!));
 
-            const publishedChaptersinCourse = await db.query.Chapter.findMany({
+            const publishedChaptersinCourse = await db.query.chapter.findMany({
                 where: and(
-                    eq(schema.Chapter.courseId, params.id!),
-                    eq(schema.Chapter.isPublished, true)
+                    eq(schema.chapter.courseId, params.id!),
+                    eq(schema.chapter.isPublished, true)
                 ),
             });
 
             if (!publishedChaptersinCourse.length) {
-                await db.update(schema.Course)
+                await db.update(schema.course)
                     .set({
                         isPublished: false,
                     })
                     .where(and(
-                        eq(schema.Course.slug, params.slug!),
+                        eq(schema.course.slug, params.slug!),
                     ))
             }
             return jsonWithSuccess("Success", "Chapter deleted successfully.");
@@ -111,13 +111,13 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
         // PATCH METHOD
         const values = await request.json() as ChapterType;
 
-        const chapter = await db.update(schema.Chapter)
+        const chapter = await db.update(schema.chapter)
             .set({
                 ...values,
             })
             .where(and(
-                eq(schema.Chapter.id, params.id!),
-                eq(schema.Chapter.courseId, courseOwner.id)
+                eq(schema.chapter.id, params.id!),
+                eq(schema.chapter.courseId, courseOwner.id)
             ))
 
 
@@ -133,8 +133,8 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             }
 
             // check if mux video already exists
-            const existingVideo = await db.query.MuxData.findFirst({
-                where: eq(schema.MuxData.chapterId, params.id!),
+            const existingVideo = await db.query.muxData.findFirst({
+                where: eq(schema.muxData.chapterId, params.id!),
             })
 
             // delete video from mux if it exists
@@ -146,9 +146,9 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                 }
 
                 await db
-                    .delete(schema.MuxData)
+                    .delete(schema.muxData)
                     .where(and(
-                        eq(schema.MuxData.chapterId, params.id!),
+                        eq(schema.muxData.chapterId, params.id!),
                     ));
 
             }
@@ -158,13 +158,13 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             if (newMuxVideo.asset_id) {
                 // check if muxData already exist
                 await db.
-                    insert(schema.MuxData)
+                    insert(schema.muxData)
                     .values({
                         assetId: newMuxVideo.asset_id,
                         chapterId: params.id!,
                     })
                     .onConflictDoUpdate({
-                        target: schema.MuxData.chapterId,
+                        target: schema.muxData.chapterId,
                         set: { chapterId: params.id! },
                     })
             }
@@ -199,10 +199,10 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const db = drizzle(env.DB_drizzle, { schema });
 
-    const courseOwner = await db.query.Course.findFirst({
+    const courseOwner = await db.query.course.findFirst({
         where: and(
-            eq(schema.Course.slug, params.slug!),
-            eq(schema.Course.userId, user.id)
+            eq(schema.course.slug, params.slug!),
+            eq(schema.course.userId, user.id)
         ),
     })
 
@@ -212,10 +212,10 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
 
 
-    const chapter = await db.query.Chapter.findFirst({
+    const chapter = await db.query.chapter.findFirst({
         where: and(
-            eq(schema.Chapter.id, params.id!),
-            eq(schema.Chapter.courseId, courseOwner.id)
+            eq(schema.chapter.id, params.id!),
+            eq(schema.chapter.courseId, courseOwner.id)
         ),
     })
 
@@ -223,9 +223,9 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         throw redirect(`/teacher/courses/${params.slug}/chapters`);
     }
 
-    const muxData = await db.query.MuxData.findFirst({
+    const muxData = await db.query.muxData.findFirst({
         where: and(
-            eq(schema.MuxData.chapterId, chapter.id),
+            eq(schema.muxData.chapterId, chapter.id),
         ),
     })
 
@@ -241,20 +241,16 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     const isCompleted = requiredField.every(Boolean);
 
-    return json({
+    return {
         chapter,
         muxData,
         isCompleted,
         completionText,
-    })
+    }
 }
 
 const ChapterIdPage = () => {
-    const data = useLoaderData<typeof loader>();
-    const chapter = JSON.parse(JSON.stringify(data.chapter)) as ChapterType;
-    const muxData = data.muxData ? JSON.parse(JSON.stringify(data.muxData)) as MuxDataType : null;
-    const isCompleted = data.isCompleted;
-    const completionText = data.completionText;
+    const { chapter, muxData, isCompleted, completionText } = useLoaderData<typeof loader>();
     const { slug, id } = useParams();
 
     return (

@@ -1,11 +1,10 @@
-import { Chapter } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 import { Badge } from "~/components/ui/badge";
-import { Grip } from "lucide-react";
+import { ChapterType } from "~/db/schema.server";
 
 interface ChaptersListProps {
-    items: Chapter[];
+    items: ChapterType[];
 }
 
 export const ChaptersList = ({ items }: ChaptersListProps) => {

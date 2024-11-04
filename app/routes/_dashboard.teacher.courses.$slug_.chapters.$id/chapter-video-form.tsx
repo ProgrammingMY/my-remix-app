@@ -12,7 +12,7 @@ import { ChapterType, MuxDataType } from '~/db/schema.server';
 
 interface ChapterVideoProps {
     chapter: ChapterType;
-    initialData: MuxDataType | null;
+    initialData: MuxDataType | undefined;
     courseSlug: string;
     chapterId: string;
 }
