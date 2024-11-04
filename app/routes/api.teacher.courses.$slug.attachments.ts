@@ -1,10 +1,10 @@
-import { Attachment } from "@prisma/client";
 import { ActionFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
 import * as schema from "~/db/schema.server";
 import { and, eq } from "drizzle-orm";
+import { AttachmentType } from "~/db/schema.server";
 
 export const action = async ({
   request,
@@ -31,10 +31,10 @@ export const action = async ({
 
     const db = drizzle(env.DB_drizzle, { schema });
 
-    const courseOwner = await db.query.Course.findFirst({
+    const courseOwner = await db.query.course.findFirst({
       where: and(
-        eq(schema.Course.slug, params.slug!),
-        eq(schema.Course.userId, user.id)
+        eq(schema.course.slug, params.slug!),
+        eq(schema.course.userId, user.id)
       ),
     });
 
@@ -44,9 +44,9 @@ export const action = async ({
 
     // POST METHOD
     if (request.method === "POST") {
-      const values = (await request.json()) as Attachment[];
+      const values = (await request.json()) as AttachmentType[];
 
-      await db.insert(schema.Attachment).values(
+      await db.insert(schema.attachment).values(
         values.map((value) => ({
           ...value,
           courseId: courseOwner.id,
@@ -63,11 +63,11 @@ export const action = async ({
       };
 
       await db
-        .delete(schema.Attachment)
+        .delete(schema.attachment)
         .where(
           and(
-            eq(schema.Attachment.id, id),
-            eq(schema.Attachment.courseId, courseOwner.id)
+            eq(schema.attachment.id, id),
+            eq(schema.attachment.courseId, courseOwner.id)
           )
         );
 

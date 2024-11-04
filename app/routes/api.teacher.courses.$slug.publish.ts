@@ -34,10 +34,10 @@ export const action = async ({
     const db = drizzle(env.DB_drizzle, { schema });
 
     if (!wantPublish) {
-      const course = await db.query.Course.findFirst({
+      const course = await db.query.course.findFirst({
         where: and(
-          eq(schema.Course.slug, params.slug!),
-          eq(schema.Course.userId, user.id)
+          eq(schema.course.slug, params.slug!),
+          eq(schema.course.userId, user.id)
         ),
       });
 
@@ -46,24 +46,24 @@ export const action = async ({
       }
 
       await db
-        .update(schema.Course)
+        .update(schema.course)
         .set({
           isPublished: false,
         })
         .where(
           and(
-            eq(schema.Course.slug, params.slug!),
-            eq(schema.Course.userId, user.id)
+            eq(schema.course.slug, params.slug!),
+            eq(schema.course.userId, user.id)
           )
         );
 
       return jsonWithSuccess("Success", "Course unpublished successfully.");
     } else {
       // for publish course
-      const course = await db.query.Course.findFirst({
+      const course = await db.query.course.findFirst({
         where: and(
-          eq(schema.Course.slug, params.slug!),
-          eq(schema.Course.userId, user.id)
+          eq(schema.course.slug, params.slug!),
+          eq(schema.course.userId, user.id)
         ),
       });
 
@@ -71,8 +71,8 @@ export const action = async ({
         return jsonWithError("Error", "Course not found");
       }
 
-      const chapters = await db.query.Chapter.findMany({
-        where: eq(schema.Chapter.courseId, course.id),
+      const chapters = await db.query.chapter.findMany({
+        where: eq(schema.chapter.courseId, course.id),
       });
 
       const hasPublishedChapters = chapters.some(
@@ -90,14 +90,14 @@ export const action = async ({
       }
 
       await db
-        .update(schema.Course)
+        .update(schema.course)
         .set({
           isPublished: true,
         })
         .where(
           and(
-            eq(schema.Course.slug, params.slug!),
-            eq(schema.Course.userId, user.id)
+            eq(schema.course.slug, params.slug!),
+            eq(schema.course.userId, user.id)
           )
         );
 

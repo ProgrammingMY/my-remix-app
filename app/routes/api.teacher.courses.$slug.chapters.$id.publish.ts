@@ -30,10 +30,10 @@ export const action = async ({
 
     const db = drizzle(env.DB_drizzle, { schema });
 
-    const courseOwner = await db.query.Course.findFirst({
+    const courseOwner = await db.query.course.findFirst({
       where: and(
-        eq(schema.Course.slug, params.slug!),
-        eq(schema.Course.userId, user.id)
+        eq(schema.course.slug, params.slug!),
+        eq(schema.course.userId, user.id)
       ),
     });
 
@@ -48,34 +48,34 @@ export const action = async ({
     // for unpublish chapter
     if (!wantPublish) {
       await db
-        .update(schema.Chapter)
+        .update(schema.chapter)
         .set({
           isPublished: false,
         })
         .where(
           and(
-            eq(schema.Chapter.id, params.id!),
-            eq(schema.Chapter.courseId, courseOwner.id)
+            eq(schema.chapter.id, params.id!),
+            eq(schema.chapter.courseId, courseOwner.id)
           )
         );
 
-      const publishedChaptersinCourse = await db.query.Chapter.findMany({
+      const publishedChaptersinCourse = await db.query.chapter.findMany({
         where: and(
-          eq(schema.Chapter.courseId, courseOwner.id),
-          eq(schema.Chapter.isPublished, true)
+          eq(schema.chapter.courseId, courseOwner.id),
+          eq(schema.chapter.isPublished, true)
         ),
       });
 
       if (!publishedChaptersinCourse.length) {
         await db
-          .update(schema.Course)
+          .update(schema.course)
           .set({
             isPublished: false,
           })
           .where(
             and(
-              eq(schema.Course.id, courseOwner.id),
-              eq(schema.Course.userId, user.id)
+              eq(schema.course.id, courseOwner.id),
+              eq(schema.course.userId, user.id)
             )
           );
       }
@@ -83,15 +83,15 @@ export const action = async ({
       return jsonWithSuccess("Success", "Chapter unpublished successfully.");
     } else {
       // for publish chapter
-      const chapter = await db.query.Chapter.findFirst({
+      const chapter = await db.query.chapter.findFirst({
         where: and(
-          eq(schema.Chapter.courseId, courseOwner.id),
-          eq(schema.Chapter.id, params.id!)
+          eq(schema.chapter.courseId, courseOwner.id),
+          eq(schema.chapter.id, params.id!)
         ),
       });
 
-      const muxData = await db.query.MuxData.findFirst({
-        where: eq(schema.MuxData.chapterId, params.id!),
+      const muxData = await db.query.muxData.findFirst({
+        where: eq(schema.muxData.chapterId, params.id!),
       });
 
       if (!chapter || !muxData || !chapter.title || !chapter.uploadId) {
@@ -99,14 +99,14 @@ export const action = async ({
       }
 
       const publishedChapter = await db
-        .update(schema.Chapter)
+        .update(schema.chapter)
         .set({
           isPublished: true,
         })
         .where(
           and(
-            eq(schema.Chapter.id, params.id!),
-            eq(schema.Chapter.courseId, courseOwner.id)
+            eq(schema.chapter.id, params.id!),
+            eq(schema.chapter.courseId, courseOwner.id)
           )
         );
 
