@@ -7,7 +7,6 @@ import { jsonWithError } from 'remix-toast';
 import FileCard, { isFileWithPreview } from './file-card';
 import { Button } from './button';
 import { ScrollArea } from './scroll-area';
-import { set } from 'zod';
 
 type UploadDropzoneProps = Parameters<typeof useUploadFiles>[0] & {
   accept?: string;

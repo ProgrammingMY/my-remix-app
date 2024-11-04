@@ -1,9 +1,9 @@
 
-import { Category, Course } from '@prisma/client';
 import { CourseCard } from '~/components/course-card';
+import { CategoryType, CourseType } from '~/db/schema.server';
 
-type CourseWithProgressWithCategory = Course & {
-    category: Category | null;
+type CourseWithProgressWithCategory = CourseType & {
+    category: CategoryType | null;
     chapters: { id: string }[];
     progress: number | null;
 };
