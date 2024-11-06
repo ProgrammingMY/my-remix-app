@@ -1,4 +1,3 @@
-import { Chapter, Course, Purchase, UserProgress } from "@prisma/client";
 import {
     Sidebar,
     SidebarContent,
@@ -17,14 +16,15 @@ import {
 import { CourseSidebarItem } from "./course-sidebar-item";
 import { CheckCircle, PlayCircle, Lock } from "lucide-react";
 import { Link, useLocation } from "@remix-run/react";
+import { ChapterType, CourseType, PurchaseType, UserProgressType } from "~/db/schema.server";
 
 interface CourseSidebarProps {
-    course: Course & {
-        chapters: (Chapter & {
-            userProgress: UserProgress[] | null
+    course: CourseType & {
+        chapters: (ChapterType & {
+            userProgress: UserProgressType[] | null
         })[]
     };
-    purchase: Purchase | null
+    purchase: PurchaseType | undefined;
 };
 
 const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
