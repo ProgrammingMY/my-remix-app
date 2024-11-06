@@ -12,6 +12,7 @@ import {
   unique,
   index,
   check,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 
 // User table
@@ -271,15 +272,12 @@ export const purchase_relation = relations(purchase, ({ one }) => ({
 export const toyyibCustomer = sqliteTable(
   "toyyibCustomer",
   {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => course.id, { onDelete: "cascade" }),
+      .references(() => course.id),
     billCode: text("billCode").notNull(),
-    transactionId: text("transactionId").notNull(),
+    transactionId: text("transactionId"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),
@@ -289,10 +287,10 @@ export const toyyibCustomer = sqliteTable(
   },
   (table) => {
     return {
-      userIndex: unique("toyyib_user_course_unique").on(
-        table.userId,
-        table.courseId
-      ),
+      pk: primaryKey({
+        name: "userId_courseId",
+        columns: [table.userId, table.courseId],
+      }),
     };
   }
 );
@@ -310,3 +308,5 @@ export type ChapterType = typeof chapter.$inferSelect;
 export type AttachmentType = typeof attachment.$inferSelect;
 export type MuxDataType = typeof muxData.$inferSelect;
 export type CategoryType = typeof category.$inferSelect;
+export type UserProgressType = typeof userProgress.$inferSelect;
+export type PurchaseType = typeof purchase.$inferSelect;
