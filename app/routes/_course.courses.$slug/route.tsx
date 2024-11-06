@@ -1,10 +1,12 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare"
 import { Outlet, useLoaderData } from "@remix-run/react";
+import { drizzle } from "drizzle-orm/d1";
 import CourseSidebar from "~/components/course-sidebar/course-sidebar";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
-import { createPrismaClient } from "~/utils/prisma.server";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
+import * as schema from "~/db/schema.server";
+import { and, asc, eq } from "drizzle-orm";
 
 export const loader = async ({ params, context, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
@@ -19,54 +21,42 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
         })
     };
 
-    const db = createPrismaClient(env);
+    const db = drizzle(env.DB_drizzle, { schema });
 
-    const course = await db.course.findUnique({
-        where: {
-            slug: params.slug,
-        },
-        include: {
+    const course = await db.query.course.findFirst({
+        where: eq(schema.course.slug, params.slug!),
+        with: {
             chapters: {
-                where: {
-                    isPublished: true,
-                },
-                include: {
+                where: eq(schema.chapter.isPublished, true),
+                with: {
                     userProgress: {
-                        where: {
-                            userId: user.id,
-                        }
+                        where: eq(schema.userProgress.userId, user.id),
                     }
                 },
-                orderBy: {
-                    position: "asc",
-                }
+                orderBy: [asc(schema.chapter.position)]
             },
-        },
+        }
     });
 
     if (!course) {
-        return redirect("/courses", {
+        return redirect("/user", {
             headers
         })
     };
 
-    const purchase = await db.purchase.findUnique({
-        where: {
-            userId_courseId: {
-                userId: user.id,
-                courseId: course.id,
-            }
-        }
+    const purchase = await db.query.purchase.findFirst({
+        where: and(
+            eq(schema.purchase.userId, user.id),
+            eq(schema.purchase.courseId, course.id)
+        )
     });
 
-    redirect(`/courses/${course.slug}/chapters/${course.chapters[0].id}`);
+    // redirect(`/courses/${course.slug}/chapters/${course.chapters[0].id}`);
 
     return {
         course,
         purchase
     }
-
-
 }
 
 export default function CourseId() {

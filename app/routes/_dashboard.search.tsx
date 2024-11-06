@@ -1,14 +1,16 @@
 
-import { Category, Course } from '@prisma/client';
 import { LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
 import { useLoaderData } from '@remix-run/react';
+import { drizzle } from 'drizzle-orm/d1';
 import { CoursesList } from '~/components/courses-list';
+import { CategoryType, CourseType } from '~/db/schema.server';
 import { getProgress } from '~/utils/getProgress.server';
-import { createPrismaClient } from '~/utils/prisma.server';
 import { createSupabaseServerClient } from '~/utils/supabase.server';
+import * as schema from '~/db/schema.server';
+import { desc, eq } from 'drizzle-orm';
 
-type CourseWithProgressWithCategory = Course & {
-    category: Category | null;
+type CourseWithProgressWithCategory = CourseType & {
+    category: CategoryType | null;
     chapters: { id: string }[];
     progress: number | null;
 };
@@ -28,31 +30,24 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
             });
         }
 
-        const db = createPrismaClient(env);
-        const courses = await db.course.findMany({
-            where: {
-                isPublished: true,
-            },
-            include: {
+        const db = drizzle(env.DB_drizzle, { schema });
+        
+        const courses = await db.query.course.findMany({
+            where: eq(schema.course.isPublished, true),
+            with: {
                 category: true,
                 chapters: {
-                    where: {
-                        isPublished: true,
-                    },
-                    select: {
-                        id: true,
-                    },
+                    where: eq(schema.chapter.isPublished, true),
+                    columns: {
+                        id: true
+                    }
                 },
                 purchases: {
-                    where: {
-                        userId: user.id,
-                    },
-                },
+                    where: eq(schema.purchase.userId, user.id),
+                }
             },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+            orderBy: [desc(schema.course.createdAt)]
+        })
 
         const courseWithProgress: CourseWithProgressWithCategory[] =
             await Promise.all(

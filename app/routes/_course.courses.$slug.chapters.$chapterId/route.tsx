@@ -1,11 +1,57 @@
 import { Banner } from "~/components/banner";
 import { Separator } from "~/components/ui/separator";
-import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { getChapter } from "~/utils/getChapter.server";
-import { createPrismaClient } from "~/utils/prisma.server";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
-import { useLoaderData, useParams } from "@remix-run/react";
+import { useLoaderData, useNavigate, useParams } from "@remix-run/react";
 import { VideoPlayer } from "./video-player";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "~/db/schema.server";
+import { Button } from "~/components/ui/button";
+import { formatPrice } from "~/lib/format";
+import { CourseProgressButton } from "./course-progress-button";
+import { and, eq } from "drizzle-orm";
+import { jsonWithError, jsonWithSuccess } from "remix-toast";
+import { CourseAttachments } from "./course-attachments";
+
+export const action = async ({ request, context, params }: ActionFunctionArgs) => {
+    try {
+        const { env } = context.cloudflare;
+        const { supabaseClient } = createSupabaseServerClient(request, env);
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (!user) {
+            throw redirect("/login");
+        };
+
+        if (request.method === "PUT") {
+            const { isCompleted } = (await request.json()) as { isCompleted: boolean };
+
+            const db = drizzle(env.DB_drizzle, { schema });
+
+            await db.insert(schema.userProgress).values({
+                userId: user.id,
+                chapterId: params.chapterId!,
+                isCompleted
+            }).onConflictDoUpdate({
+                target: [schema.userProgress.userId, schema.userProgress.chapterId],
+                set: { isCompleted }
+            })
+
+            return jsonWithSuccess("Success", "Course progress updated successfully");
+        } else {
+            return jsonWithError("Error", "Method not allowed");
+        }
+
+
+
+    } catch (error) {
+        console.log("[COURSE ID CHAPTERS ACTION]", error);
+        return jsonWithError("Error", "Something went wrong.");
+    }
+
+}
 
 export const loader = async ({ params, context, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
@@ -19,7 +65,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
         });
     };
 
-    const db = createPrismaClient(env);
+    const db = drizzle(env.DB_drizzle, { schema });
 
     const {
         chapter,
@@ -37,7 +83,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
     });
 
     if (!chapter || !course) {
-        return redirect("/courses", {
+        return redirect("/user", {
             headers
         });
     }
@@ -71,6 +117,11 @@ const ChapterIdPage = () => {
         completeOnEnd
     } = useLoaderData<typeof loader>();
     const params = useParams();
+    const navigate = useNavigate();
+
+    const onEnrollClick = async () => {
+        return navigate(`/courses/${params.slug}/checkout`)
+    }
 
     return (
         <div>
@@ -91,7 +142,7 @@ const ChapterIdPage = () => {
                     <VideoPlayer
                         chapterId={params.id!}
                         title={chapter.title}
-                        courseId={params.chapterId!}
+                        courseSlug={params.slug!}
                         nextChapterId={nextChapter?.id}
                         playbackId={muxData?.playbackId!}
                         isLocked={isLocked}
@@ -103,30 +154,29 @@ const ChapterIdPage = () => {
                         <h2 className="text-2xl font-semibold mb-2">
                             {chapter.title}
                         </h2>
-                        {/* {purchase ? (
+                        {purchase ? (
                             <div>
                                 <CourseProgressButton
-                                    chapterId={params.chapterId}
-                                    courseId={params.id}
+                                    chapterId={params.chapterId!}
+                                    courseSlug={params.slug!}
                                     isCompleted={!!userProgress?.isCompleted}
                                     nextChapterId={nextChapter?.id}
                                 />
                             </div>
                         ) : (
-                            <CourseEnrollButton
-                                courseId={params.id}
-                                price={course.price!}
-                            />
-                        )} */}
+                            <Button onClick={onEnrollClick} size={"sm"} className="w-full md:w-auto">
+                                Purchase course for {formatPrice(course.price!)}
+                            </Button>
+                        )}
                     </div>
                     <Separator />
                     <div>
                         {!!attachments.length && (
                             <>
                                 <Separator />
-                                {/* <CourseAttachments
+                                <CourseAttachments
                                     attachments={attachments}
-                                /> */}
+                                />
                             </>
                         )}
                     </div>

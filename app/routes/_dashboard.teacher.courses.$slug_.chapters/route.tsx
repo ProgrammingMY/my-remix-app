@@ -1,4 +1,3 @@
-"use client";
 import * as z from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,12 +18,12 @@ import { cn } from '~/lib/utils';
 import * as schema from '~/db/schema.server';
 import { ChaptersList } from './chapters-list';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
-import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
 import { createSupabaseServerClient } from '~/utils/supabase.server';
 import { Link, Outlet, useFetcher, useLoaderData, useNavigate, useParams } from '@remix-run/react';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, asc, desc, eq } from 'drizzle-orm';
-import { ChapterType, CourseType } from '~/db/schema.server';
+import { ChapterType } from '~/db/schema.server';
 
 const formSchema = z.object({
     title: z.string().min(1),
@@ -116,7 +115,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         });
 
         if (!course) {
-            throw redirect("/courses", {
+            throw redirect("/user", {
                 headers
             });
         }

@@ -3,14 +3,16 @@ import { CheckCircle, Clock } from "lucide-react";
 import { InfoCard } from "./info-card";
 import { defer, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
-import { createPrismaClient } from "~/utils/prisma.server";
-import { Category, Chapter, Course } from "@prisma/client";
 import { useLoaderData } from "@remix-run/react";
-import { Suspense } from "react";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "~/db/schema.server";
+import { eq } from "drizzle-orm";
+import { CategoryType, ChapterType, CourseType } from "~/db/schema.server";
+import { getProgress } from "~/utils/getProgress.server";
 
-type CourseWithProgressWithCategory = Course & {
-    category: Category;
-    chapters: Chapter[];
+type CourseWithProgressWithCategory = CourseType & {
+    category: CategoryType;
+    chapters: ChapterType[];
     progress: number | null;
 };
 
@@ -29,63 +31,29 @@ export const loader = async ({ request, context, params }: LoaderFunctionArgs) =
             });
         }
 
-        const db = createPrismaClient(env);
-        const purchaseCourses = await db.purchase.findMany({
-            where: {
-                userId: user.id,
-            },
-            select: {
-                course: {
-                    include: {
-                        category: true,
-                        chapters: {
-                            where: {
-                                isPublished: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
+        const db = drizzle(env.DB_drizzle, { schema });
 
-        const courses = purchaseCourses.map(
+        const purchasedCourses = await db.query.purchase.findMany({
+            where: eq(schema.purchase.userId, user.id),
+            with: {
+                course: {
+                    with: {
+                        chapters: {
+                            where: eq(schema.chapter.isPublished, true),
+                        }
+                    }
+                }
+            }
+        })
+
+        const courses = purchasedCourses.map(
             (purchase) => purchase.course
         ) as CourseWithProgressWithCategory[];
 
         // get progress
         for (let course of courses) {
-            try {
-                const publisedChapters = await db.chapter.findMany({
-                    where: {
-                        courseId: course.id,
-                        isPublished: true,
-                    },
-                    select: {
-                        id: true
-                    }
-                });
-
-                const publishedChapterIds = publisedChapters.map((chapter) => chapter.id);
-
-                const validCompletedChapters = await db.userProgress.count({
-                    where: {
-                        userId: user.id,
-                        chapterId: {
-                            in: publishedChapterIds,
-                        },
-                        isCompleted: true
-                    }
-                });
-
-                const progressPercentage = (validCompletedChapters / publishedChapterIds.length) * 100;
-
-                course["progress"] = progressPercentage;
-
-            } catch (error) {
-                console.log("[GET_PROGRESS]", error);
-                course["progress"] = 0;
-            }
-
+            const progress = await getProgress(user.id, course.id, env);
+            course["progress"] = progress;
         }
 
         const completedCourses = courses.filter(
@@ -95,10 +63,10 @@ export const loader = async ({ request, context, params }: LoaderFunctionArgs) =
             (course) => (course.progress ?? 0) < 100
         );
 
-        return defer({
+        return {
             completedCourses,
             coursesInProgress,
-        });
+        };
     } catch (error) {
         console.log("[DASHBOARD COURSES]", error);
         return {

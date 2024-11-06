@@ -1,10 +1,10 @@
-import { Chapter } from "@prisma/client";
 import { ActionFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
 import * as schema from "~/db/schema.server";
 import { drizzle } from "drizzle-orm/d1";
 import { and, eq } from "drizzle-orm";
+import { ChapterType } from "~/db/schema.server";
 
 export const action = async ({
   request,
@@ -31,10 +31,10 @@ export const action = async ({
 
     const db = drizzle(env.DB_drizzle, { schema });
 
-    const courseOwner = await db.query.Course.findFirst({
+    const courseOwner = await db.query.course.findFirst({
       where: and(
-        eq(schema.Course.slug, params.slug!),
-        eq(schema.Course.userId, user.id)
+        eq(schema.course.slug, params.slug!),
+        eq(schema.course.userId, user.id)
       ),
     });
 
@@ -43,15 +43,15 @@ export const action = async ({
     }
 
     const formData = await request.formData();
-    const list = JSON.parse(formData.get("data") as string) as Chapter[];
+    const list = JSON.parse(formData.get("data") as string) as ChapterType[];
 
     for (let item of list) {
       await db
-        .update(schema.Chapter)
+        .update(schema.chapter)
         .set({
           position: item.position,
         })
-        .where(eq(schema.Chapter.id, item.id));
+        .where(eq(schema.chapter.id, item.id));
     }
 
     return jsonWithSuccess("Success", "Chapters reordered successfully.");

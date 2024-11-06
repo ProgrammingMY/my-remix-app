@@ -4,12 +4,12 @@ import MuxPlayer from "@mux/mux-player-react";
 import { Loader2, Lock } from "lucide-react";
 import { useState } from "react";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
-import { useNavigate } from "@remix-run/react";
+import { useFetcher, useNavigate } from "@remix-run/react";
 
 interface VideoPlayerProps {
     chapterId: string;
     title: string;
-    courseId: string;
+    courseSlug: string;
     nextChapterId?: string;
     playbackId: string;
     isLocked: boolean;
@@ -19,7 +19,7 @@ interface VideoPlayerProps {
 export const VideoPlayer = ({
     chapterId,
     title,
-    courseId,
+    courseSlug,
     nextChapterId,
     playbackId,
     isLocked,
@@ -27,13 +27,18 @@ export const VideoPlayer = ({
 }: VideoPlayerProps) => {
     const [isReady, setIsReady] = useState(false);
     const navigate = useNavigate();
+    const fetcher = useFetcher();
 
     const onEnded = async () => {
         try {
             if (completeOnEnd) {
-                // await axios.put(`/api/courses/${courseId}/chapters/${chapterId}/progress`, {
-                //     isCompleted: true,
-                // });
+                fetcher.submit({
+                    isCompleted: true,
+                },
+                    {
+                        method: "PUT",
+                        encType: "application/json",
+                    })
             }
 
             // if (!nextChapterId) {
@@ -41,7 +46,7 @@ export const VideoPlayer = ({
             // }
             jsonWithSuccess({ result: "Success" }, { message: "Progress updated" })
             if (nextChapterId) {
-                navigate(`/courses/${courseId}/chapters/${nextChapterId}`);
+                navigate(`/courses/${courseSlug}/chapters/${nextChapterId}`);
             }
 
         }

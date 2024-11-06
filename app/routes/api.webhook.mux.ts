@@ -39,29 +39,16 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         const db = drizzle(env.DB_drizzle, { schema });
 
         if (playbackId) {
-          const muxDataExist = await db.query.muxData.findFirst({
-            where: eq(schema.muxData.assetId, event.object.id),
-          });
-
-          if (muxDataExist) {
-            await db
-              .update(schema.muxData)
-              .set({
-                playbackId: playbackId.id,
-              })
-              .where(eq(schema.muxData.assetId, event.object.id));
-          } else {
-            await db
-              .insert(schema.muxData)
-              .values({
-                assetId: event.object.id,
-                playbackId: playbackId.id,
-              })
-              .onConflictDoUpdate({
-                target: schema.muxData.playbackId,
-                set: { playbackId: playbackId.id },
-              });
-          }
+          await db
+            .insert(schema.muxData)
+            .values({
+              assetId: event.object.id,
+              playbackId: playbackId.id,
+            })
+            .onConflictDoUpdate({
+              target: schema.muxData.assetId,
+              set: { playbackId: playbackId.id },
+            });
         }
       }
     }

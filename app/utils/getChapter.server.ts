@@ -1,10 +1,13 @@
-import { Chapter, Attachment, PrismaClient } from "@prisma/client";
+import { and, asc, eq, gt } from "drizzle-orm";
+import { DrizzleD1Database } from "drizzle-orm/d1";
+import * as schema from "~/db/schema.server";
+import { AttachmentType, ChapterType } from "~/db/schema.server";
 
 interface getChapterProps {
   userId: string;
   courseSlug: string;
   chapterId: string;
-  db: PrismaClient;
+  db: DrizzleD1Database<typeof schema>;
 }
 
 export const getChapter = async ({
@@ -14,77 +17,65 @@ export const getChapter = async ({
   db,
 }: getChapterProps) => {
   try {
-    const course = await db.course.findUnique({
-      where: {
-        isPublished: true,
-        slug: courseSlug,
-      },
-      select: {
+    const course = await db.query.course.findFirst({
+      where: and(
+        eq(schema.course.isPublished, true),
+        eq(schema.course.slug, courseSlug)
+      ),
+      columns: {
         price: true,
         id: true,
       },
     });
 
-    const chapter = await db.chapter.findUnique({
-      where: {
-        id: chapterId,
-        isPublished: true,
-      },
+    const chapter = await db.query.chapter.findFirst({
+      where: and(
+        eq(schema.chapter.id, chapterId),
+        eq(schema.chapter.isPublished, true)
+      ),
     });
 
-    if (!chapter || !course) {
-      throw new Error("Chapter not found");
+    if (!course || !chapter) {
+      throw new Error("Chapter/course not found");
     }
 
-    const purchase = await db.purchase.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId: course.id,
-        },
-      },
+    const purchase = await db.query.purchase.findFirst({
+      where: and(
+        eq(schema.purchase.userId, userId),
+        eq(schema.purchase.courseId, course.id)
+      ),
     });
 
     let muxData = null;
-    let attachments: Attachment[] = [];
-    let nextChapter: Chapter | null = null;
+    let attachments: AttachmentType[] = [];
+    let nextChapter: ChapterType | undefined = undefined;
 
     if (purchase) {
-      attachments = await db.attachment.findMany({
-        where: {
-          courseId: course.id,
-        },
+      attachments = await db.query.attachment.findMany({
+        where: eq(schema.attachment.courseId, course.id),
       });
     }
 
     if (chapter.isFree || purchase) {
-      muxData = await db.muxData.findUnique({
-        where: {
-          chapterId: chapterId,
-        },
+      muxData = await db.query.muxData.findFirst({
+        where: eq(schema.muxData.chapterId, chapterId),
       });
 
-      nextChapter = await db.chapter.findFirst({
-        where: {
-          courseId: course.id,
-          isPublished: true,
-          position: {
-            gt: chapter?.position,
-          },
-        },
-        orderBy: {
-          position: "asc",
-        },
+      nextChapter = await db.query.chapter.findFirst({
+        where: and(
+          eq(schema.chapter.courseId, course.id),
+          eq(schema.chapter.isPublished, true),
+          gt(schema.chapter.position, chapter.position)
+        ),
+        orderBy: [asc(schema.chapter.position)],
       });
     }
 
-    const userProgress = await db.userProgress.findUnique({
-      where: {
-        userId_chapterId: {
-          userId,
-          chapterId,
-        },
-      },
+    const userProgress = await db.query.userProgress.findFirst({
+      where: and(
+        eq(schema.userProgress.userId, userId),
+        eq(schema.userProgress.chapterId, chapterId)
+      ),
     });
 
     return {

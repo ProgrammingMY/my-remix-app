@@ -139,18 +139,19 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
 
             // delete video from mux if it exists
             if (existingVideo) {
-                const videoInMux = await mux.video.assets.retrieve(existingVideo.assetId);
+                try {
+                    const videoInMux = await mux.video.assets.retrieve(existingVideo.assetId);
 
-                if (videoInMux) {
-                    await mux.video.assets.delete(existingVideo.assetId);
+                    if (videoInMux) {
+                        await mux.video.assets.delete(existingVideo.assetId);
+                    }
+                } finally {
+                    await db
+                        .delete(schema.muxData)
+                        .where(and(
+                            eq(schema.muxData.chapterId, params.id!),
+                        ));
                 }
-
-                await db
-                    .delete(schema.muxData)
-                    .where(and(
-                        eq(schema.muxData.chapterId, params.id!),
-                    ));
-
             }
 
             const newMuxVideo = await mux.video.uploads.retrieve(values.uploadId);
@@ -164,7 +165,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                         chapterId: params.id!,
                     })
                     .onConflictDoUpdate({
-                        target: schema.muxData.chapterId,
+                        target: schema.muxData.assetId,
                         set: { chapterId: params.id! },
                     })
             }
