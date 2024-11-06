@@ -1,7 +1,6 @@
 import { Button } from '~/components/ui/button';
 import { ExternalLinkIcon } from 'lucide-react';
 import { cn } from '~/lib/utils';
-import { Chapter, Course } from '@prisma/client';
 import { ChaptersList } from './chapters-list';
 import { useNavigate } from '@remix-run/react';
 import { ChapterType, CourseType } from '~/db/schema.server';

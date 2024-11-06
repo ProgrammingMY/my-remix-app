@@ -4,10 +4,9 @@ import { Button } from '~/components/ui/button';
 import React, { useState } from 'react'
 import { File, Loader2, PlusCircle, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
-import { Attachment, Course } from '@prisma/client';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { UploadDropzone } from '~/components/ui/upload-dropzone';
-import { useFetcher, useParams } from '@remix-run/react';
+import { useFetcher } from '@remix-run/react';
 import { AttachmentType, CourseType } from '~/db/schema.server';
 
 interface AttachmentFormProps {

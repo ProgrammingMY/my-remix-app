@@ -73,7 +73,7 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
                     <DialogTrigger asChild>
                         <Button onClick={toggleEditting} variant='ghost' type='button'>
                             <PlusCircle className='h-4 w-4 mr-2' />
-                            Upload image
+                            Upload video
                         </Button>
                     </DialogTrigger>
                     <DialogContent>

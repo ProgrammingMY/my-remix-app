@@ -1,12 +1,12 @@
 import { drizzle } from "drizzle-orm/d1";
 import { ActionFunctionArgs, json, redirect } from '@remix-run/cloudflare'
-import { Form, Link, useActionData, useLoaderData } from '@remix-run/react'
+import { Form, Link } from '@remix-run/react'
 import { redirectWithError, redirectWithSuccess } from 'remix-toast'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { createSupabaseServerClient } from '~/utils/supabase.server'
-import { Course } from "~/db/schema.server";
+import * as schema from "~/db/schema.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
@@ -26,9 +26,9 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         const newTitle = formData.get("title") as string;
         const slug = newTitle.toLowerCase().replaceAll(" ", "-");
 
-        const db = drizzle(env.DB_drizzle);
+        const db = drizzle(env.DB_drizzle, { schema });
 
-        const course = await db.insert(Course)
+        const course = await db.insert(schema.course)
             .values({
                 userId: user.id,
                 title: formData.get("title") as string,
