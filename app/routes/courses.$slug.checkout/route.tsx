@@ -18,7 +18,6 @@ import { formatPrice } from "~/lib/format";
 import { jsonWithError, jsonWithSuccess, redirectWithWarning } from "remix-toast";
 import { Button } from "~/components/ui/button";
 import { CreditCard } from "lucide-react";
-import { format, addMinutes } from "date-fns";
 
 export const action = async ({ request, context, params }: ActionFunctionArgs) => {
     try {
@@ -64,7 +63,7 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
             billReturnUrl: `${env.REMIX_PUBLIC_APP_URL}/courses/${course.slug}/status`,
             billCallbackUrl: `${env.REMIX_PUBLIC_APP_URL}/courses/${course.slug}/status`, // successful payment
             billPaymentChannel: "0",
-            billExpiryDate: format(addMinutes(new Date(), 10), "dd-MM-yyyy HH:mm:ss"),
+            billExpiryDays: "1",
         };
 
         const formData = new FormData();
@@ -78,8 +77,6 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
         });
 
         const bill = await response.json() as { BillCode: string }[];
-
-        console.log(bill)
 
         await db.insert(schema.toyyibCustomer).values({
             userId: user.id,
