@@ -68,45 +68,18 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
         <div className='mt-6 border bg-slate-100 rounded-md p-4' >
             <div className='font-medium flex items-center justify-between'>
                 Course Attachments
-                <Dialog open={isEditting} onOpenChange={setIsEditting}>
-                    <DialogTrigger asChild>
-                        <Button onClick={toggleEditting} variant='ghost' type='button'>
+                <Button onClick={toggleEditting} variant='ghost' type='button'>
+                    {isEditting ? (
+                        <>Cancel</>
+                    ) : (
+                        <>
                             <PlusCircle className='h-4 w-4 mr-2' />
                             Add a file
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Upload files</DialogTitle>
-                            <DialogDescription>
-                                Drag and drop your files here or click to browse.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <UploadDropzone
-                            route='attachment'
-                            accept='*'
-                            multiple
-                            maxFileCount={5}
-                            description={{
-                                maxFiles: 5,
-                                maxFileSize: '10MB',
-                                fileTypes: 'Any',
-                            }}
-                            onUploadComplete={({ files, metadata }) => {
-                                // update all files in db
-                                if (files.length > 0) {
-                                    onSubmit(files.map((file) => ({ fileUrl: file.objectKey, fileName: file.name })));
-                                }
-                                jsonWithSuccess({ result: "Success" }, { message: "Course updated successfully." });
-                            }}
-                            onUploadError={(error) => {
-                                jsonWithError({ result: "Error" }, { message: "Something went wrong." });
-                            }}
-                        />
-                    </DialogContent>
-                </Dialog>
+                        </>
+                    )}
+                </Button>
             </div>
-            {!isEditting && (
+            {!isEditting ? (
                 <>
                     {initialData.attachments.length === 0 && (
                         <p className='text-sm mt-2 text-slate-500 italic'>No attachments</p>
@@ -131,6 +104,28 @@ export const AttachmentForm = ({ initialData, courseSlug }: AttachmentFormProps)
                         </div>
                     )}
                 </>
+            ) : (
+                <UploadDropzone
+                    route='attachment'
+                    accept='*'
+                    multiple
+                    maxFileCount={5}
+                    description={{
+                        maxFiles: 5,
+                        maxFileSize: '10MB',
+                        fileTypes: 'Any',
+                    }}
+                    onUploadComplete={({ files, metadata }) => {
+                        // update all files in db
+                        if (files.length > 0) {
+                            onSubmit(files.map((file) => ({ fileUrl: file.objectKey, fileName: file.name })));
+                        }
+                        jsonWithSuccess({ result: "Success" }, { message: "Course updated successfully." });
+                    }}
+                    onUploadError={(error) => {
+                        jsonWithError({ result: "Error" }, { message: "Something went wrong." });
+                    }}
+                />
             )}
         </div >
     )

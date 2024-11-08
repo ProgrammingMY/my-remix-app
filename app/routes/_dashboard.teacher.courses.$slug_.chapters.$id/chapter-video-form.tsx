@@ -3,7 +3,7 @@ import { Button } from '~/components/ui/button';
 import MuxPlayer from '@mux/mux-player-react'
 
 import React, { useEffect, useState } from 'react'
-import { Pencil, PlusCircle, Video } from 'lucide-react';
+import { Loader2, Pencil, PlusCircle, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import MuxUploader from '@mux/mux-uploader-react';
@@ -37,6 +37,8 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
         setIsEditting((prev) => !prev);
     }
 
+    const isLoading = fetcher.state === "loading";
+
     useEffect(() => {
         if (fetcher.state === "idle" && !fetcher.data && isEditting) {
             fetcher.load(`/api/muxurl`);
@@ -61,6 +63,7 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
             jsonWithError({ result: "error" }, { message: "Something went wrong." });
         } finally {
             setIsEditting(false);
+            setUploadData(null);
         }
     }
 
@@ -69,25 +72,16 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
         <div className='mt-6 border bg-slate-100 rounded-md p-4' >
             <div className='font-medium flex items-center justify-between'>
                 Course video
-                <Dialog open={isEditting} onOpenChange={setIsEditting}>
-                    <DialogTrigger asChild>
-                        <Button onClick={toggleEditting} variant='ghost' type='button'>
+                <Button onClick={toggleEditting} variant='ghost' type='button'>
+                    {isEditting ? (
+                        <>Cancel</>
+                    ) : (
+                        <>
                             <PlusCircle className='h-4 w-4 mr-2' />
                             Upload video
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Upload video</DialogTitle>
-                        </DialogHeader>
-                        <DialogDescription>
-                        </DialogDescription>
-                        {uploadData && (
-                            <MuxUploader endpoint={uploadData.url} onSuccess={() => onSubmit({ uploadId: uploadData.id })} />
-                        )}
-                    </DialogContent>
-                </Dialog>
-
+                        </>
+                    )}
+                </Button>
             </div>
             {!isEditting && (
                 !chapter.uploadId ? (
@@ -103,6 +97,15 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
                         )}
                     </div>
                 )
+            )}
+            {isEditting && uploadData && (
+                <MuxUploader endpoint={uploadData.url} onSuccess={() => onSubmit({ uploadId: uploadData.id })} />
+            )}
+            {isEditting && !uploadData && (
+                <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
+                    <Loader2 className='h-10 w-10 animate-spin' />
+                    Please wait...
+                </div>
             )}
             {chapter.uploadId && !isEditting && (
                 <div className='text-xs text-muted-foreground mt-2'>
