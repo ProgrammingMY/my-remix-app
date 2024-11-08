@@ -68,13 +68,13 @@ export default function CourseId() {
                 purchase={purchase}
             />
             <SidebarTrigger className="h-10 w-10" />
-            {/* <SidebarInset> */}
+            <SidebarInset>
             <div className="h-full w-full">
                 <main className="h-full p-6">
                     <Outlet />
                 </main>
             </div>
-            {/* </SidebarInset> */}
+            </SidebarInset>
         </SidebarProvider>
     )
 }

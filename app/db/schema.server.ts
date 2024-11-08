@@ -278,6 +278,7 @@ export const toyyibCustomer = sqliteTable(
       .references(() => course.id),
     billCode: text("billCode").notNull(),
     transactionId: text("transactionId"),
+    status: text("status").$type<"pending" | "success" | "failed">(),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),

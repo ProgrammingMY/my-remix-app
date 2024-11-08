@@ -5,9 +5,11 @@ import {
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
     SidebarTrigger,
     useSidebar,
 } from "~/components/ui/sidebar"
@@ -65,15 +67,16 @@ export function AppSidebar() {
     }
 
     return (
-        <Sidebar variant="floating" collapsible="icon">
+        <Sidebar collapsible="icon">
             <SidebarContent>
                 <SidebarGroup>
                     {state === "expanded" && (
                         <div className="flex justify-between items-center">
-                            <SidebarGroupLabel>Kelas Tech</SidebarGroupLabel>
+                            <SidebarHeader className="text-lg font-medium line-clamp-1">KELAS TECH</SidebarHeader>
                             <SidebarTrigger />
                         </div>
                     )}
+                    <SidebarSeparator />
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {state === "collapsed" && (
