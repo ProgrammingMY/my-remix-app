@@ -13,11 +13,11 @@ import {
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Pencil } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import { formatPrice } from '~/lib/format';
-import { useFetcher, useNavigate } from '@remix-run/react';
+import { useFetcher } from '@remix-run/react';
 import { CourseType } from '~/db/schema.server';
 
 const formSchema = z.object({
@@ -32,7 +32,6 @@ interface PriceFormProps {
 
 export const PriceForm = ({ initialData, courseSlug }: PriceFormProps) => {
     const [isEditting, setIsEditting] = useState(false);
-    const navigate = useNavigate();
     const fetcher = useFetcher();
 
     const toggleEditting = () => {
@@ -50,7 +49,6 @@ export const PriceForm = ({ initialData, courseSlug }: PriceFormProps) => {
         try {
             fetcher.submit(values, {
                 method: "PATCH",
-                encType: "application/json",
             });
             setIsEditting(false);
         } catch (error) {

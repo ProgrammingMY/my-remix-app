@@ -46,13 +46,12 @@ export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => 
         defaultValues: { description: initialData?.description || "" },
     });
 
-    const isLoading = fetcher.state === "loading";
+    const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             fetcher.submit(values, {
                 method: "PATCH",
-                encType: "application/json",
             });
             setIsEditting(false);
         } catch (error) {
@@ -77,7 +76,7 @@ export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => 
             </div>
             {!isEditting ? (
                 <p className={cn("text-sm mt-2", !initialData.description && "text-slate-500 italic")}>
-                    {initialData.description || "No description"}
+                    {fetcher.formData ? fetcher.formData.get("description") as string : initialData.description || "No description"}
                 </p>
             ) : (
                 <Form {...form}>

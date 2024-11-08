@@ -14,7 +14,7 @@ import { Input } from '~/components/ui/input';
 
 import { useState } from 'react'
 import { Pencil } from 'lucide-react';
-import { useFetcher, useNavigate } from '@remix-run/react';
+import { useFetcher } from '@remix-run/react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { CourseFormProps } from '~/lib/types';
 
@@ -38,13 +38,12 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
         defaultValues: initialData,
     });
 
-    const isLoading = fetcher.state === "loading";
+    const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
             fetcher.submit(values, {
                 method: "PATCH",
-                encType: "application/json",
             });
             jsonWithSuccess({ result: "Course title updated successfully." }, { message: "Success" });
             setIsEditting(false);
@@ -70,7 +69,7 @@ function TitleForm({ initialData, courseSlug }: CourseFormProps) {
             </div>
             {!isEditting ? (
                 <div className='text-sm mt-2'>
-                    {initialData.title}
+                    {fetcher.formData ? fetcher.formData.get("title") as string : initialData.title}
                 </div>
             ) : (
                 <Form {...form}>

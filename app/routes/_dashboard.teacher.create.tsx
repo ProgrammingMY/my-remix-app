@@ -1,12 +1,13 @@
 import { drizzle } from "drizzle-orm/d1";
-import { ActionFunctionArgs, json, redirect } from '@remix-run/cloudflare'
-import { Form, Link } from '@remix-run/react'
+import { ActionFunctionArgs, redirect } from '@remix-run/cloudflare'
+import { Form, Link, useNavigation } from '@remix-run/react'
 import { redirectWithError, redirectWithSuccess } from 'remix-toast'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { createSupabaseServerClient } from '~/utils/supabase.server'
 import * as schema from "~/db/schema.server";
+import { Loader2 } from "lucide-react";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
@@ -46,8 +47,10 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 }
 
 export default function CreatePage() {
+    const navigation = useNavigation();
+    const isSubmitting = navigation.formAction === "/teacher/create";
     return (
-        <div className='max-w-5xl mx-auto flex md:items-center md:justify-center h-full'>
+        <div className='relative max-w-5xl mx-auto flex md:items-center md:justify-center h-full'>
             <div>
                 <h1 className='text-2xl'>
                     Name Your Course
@@ -56,23 +59,32 @@ export default function CreatePage() {
                     What would you like to name your course? You can change this later.
                 </p>
                 <Form
-                    className='space-y-8 mt-8'
+                    className='mt-8'
                     method='post'
+                    action="/teacher/create"
                 >
-                    <Label>Course Title</Label>
-                    <Input placeholder="Title" name='title' />
-                    <div className='flex items-center gap-x-2'>
-                        <Link to="/teacher/courses">
-                            <Button variant='ghost' type='button' className='text-sm'>
-                                Cancel
+                    <fieldset disabled={isSubmitting} className="space-y-8" >
+                        <Label>Course Title</Label>
+                        <Input placeholder="Title" name='title' />
+                        <div className='flex items-center gap-x-2'>
+                            <Link to="/teacher/courses">
+                                <Button variant='ghost' type='button' className='text-sm'>
+                                    Cancel
+                                </Button>
+                            </Link>
+                            <Button type='submit'>
+                                Create Course
                             </Button>
-                        </Link>
-                        <Button type='submit'>
-                            Create Course
-                        </Button>
-                    </div>
+                        </div>
+                    </fieldset>
                 </Form>
+
             </div>
+            {isSubmitting ? (
+                <div className='absolute h-full w-full bg-slate-500/20 top-0 right-0 rounded-m flex items-center justify-center'>
+                    <Loader2 className='h-10 w-10 animate-spin text-sky-700' />
+                </div>
+            ) : null}
         </div >
     )
 }
