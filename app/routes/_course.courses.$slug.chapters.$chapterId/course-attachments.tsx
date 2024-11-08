@@ -11,7 +11,6 @@ import { useEffect, useState } from "react"
 import { jsonWithError } from "remix-toast"
 import { useFetcher, useParams } from "@remix-run/react"
 import { AttachmentType } from "~/db/schema.server"
-// import { getDownloadURL } from "~/components/upload-component/download-action"
 
 
 export function CourseAttachments({
@@ -20,43 +19,43 @@ export function CourseAttachments({
     attachments: AttachmentType[]
 }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [attachmentName, setAttachmentName] = useState<string | null>(null);
     const fetcher = useFetcher();
     const { slug } = useParams();
 
     useEffect(() => {
-        if (fetcher.state === "idle" && fetcher.data) {
-            const data = fetcher.data as Response;
+        const getAttachment = async () => {
+            if (fetcher.state === "idle" && fetcher.data && attachmentName) {
+                const data = fetcher.data as string;
 
-            console.log(data);
+                const response = await fetch(data);
+
+                if (response.status !== 200) {
+                    return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
+                }
+
+                const blob = URL.createObjectURL(await response.blob());
+
+                const link = document.createElement("a");
+                link.href = blob;
+                link.download = attachmentName;
+                link.click();
+
+                setAttachmentName(null);
+                URL.revokeObjectURL(blob);
+            }
         }
-    }, [fetcher])
+
+        getAttachment();
+
+    }, [fetcher.state, fetcher.data])
 
     const onDownload = async (attachment: AttachmentType) => {
         try {
+            setAttachmentName(attachment.fileName);
             fetcher.load(`/api/courses/${slug}/download/${attachment.fileUrl}`);
-
-
-
-            // if (data.status !== "200") {
-            //     throw new Error("Something went wrong");
-            // }
-
-            // const response = await fetch(data.data, {
-            //     method: "GET",
-            // });
-
-            // if (response.status !== 200) {
-            //     throw new Error("Something went wrong");
-            // }
-
-            // const blob = URL.createObjectURL(await response.blob());
-
-            // const link = document.createElement("a");
-            // link.href = blob;
-            // link.download = attachment.fileName;
-            // link.click();
-
         } catch (error) {
+            setAttachmentName(null);
             return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
         }
     }

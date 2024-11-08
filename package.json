@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.679.0",
+    "@aws-sdk/s3-request-presigner": "^3.687.0",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^3.9.0",
     "@mux/mux-node": "^8.8.0",
@@ -46,7 +47,6 @@
     "better-upload": "^0.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.36.0",
     "isbot": "^4.1.0",
     "lucide-react": "^0.453.0",
