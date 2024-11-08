@@ -1,7 +1,7 @@
 import { IconBadge } from "~/components/icon-badge";
 import TitleForm from "./title-form";
 import { CircleDollarSign, File, LayoutDashboard, ListCheck } from "lucide-react";
-import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { useLoaderData } from "@remix-run/react";
 import { DescriptionForm } from "./description-form";
@@ -15,15 +15,7 @@ import Action from "./action";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
-import { AttachmentType, ChapterType, CourseType } from "~/db/schema.server";
 
-interface CourseFormLoaderData {
-    course: CourseType;
-    chapters: ChapterType[];
-    attachments: AttachmentType[];
-    isComplete: boolean;
-    completionText: string;
-}
 
 export const action = async ({
     context,
@@ -93,7 +85,12 @@ export const action = async ({
 
         // PATCH METHOD
         else if (request.method === "PATCH") {
-            const values = await request.json() as CourseType;
+            const data = await request.formData();
+            const values = JSON.parse(JSON.stringify(Object.fromEntries(data)));
+
+            if (values.price) {
+                values.price = parseFloat(values.price);
+            }
 
             await db.update(schema.course)
                 .set({ ...values })
