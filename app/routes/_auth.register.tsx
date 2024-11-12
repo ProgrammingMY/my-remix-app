@@ -28,7 +28,9 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         }
     });
 
+
     if (error) {
+        console.log(error);
         return json({ success: false, message: "Something went wrong" })
     } else {
         return json({ success: true, message: "Thanks for signing up! Please check your email for a confirmation link." })
