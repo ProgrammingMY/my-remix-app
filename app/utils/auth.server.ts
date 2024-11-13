@@ -207,17 +207,18 @@ export async function logout(
     redirectTo?: string;
   }
 ) {
-  const authSession = await sessionStorage.getSession(
-    request.headers.get("Cookie")
-  );
-  const sessionId = authSession.get(sessionToken);
+  const cookieSession = await getSession(request.headers.get("Cookie"));
+  const token = cookieSession.get(sessionToken);
+  const { session } = await validateSessionToken(token, env);
   // if this fails, we still need to delete the session from the user's browser
   // and it doesn't do any harm staying in the db anyway.
-  const db = drizzle(env.DB_drizzle, { schema });
-  if (sessionId) {
-    await db.delete(schema.session).where(eq(schema.session.id, sessionId));
+  console.log(session);
+  if (session) {
+    await invalidateSession(session.id, env);
   }
   throw redirect(redirectTo, {
-    headers: { "Set-Cookie": await sessionStorage.destroySession(authSession) },
+    headers: {
+      "Set-Cookie": await sessionStorage.destroySession(cookieSession),
+    },
   });
 }
