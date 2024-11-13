@@ -1,4 +1,3 @@
-import { mode } from "build/server";
 import { relations, sql } from "drizzle-orm";
 import {
   text,
@@ -10,12 +9,13 @@ import {
   primaryKey,
   blob,
 } from "drizzle-orm/sqlite-core";
+import { uuidv7 } from "uuidv7";
 
 // User table
 export const user = sqliteTable("user", {
   id: text("id")
     .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+    .$defaultFn(() => uuidv7()),
   email: text("email").notNull().unique(),
   name: text("name"),
   imageUrl: text("imageUrl"),
