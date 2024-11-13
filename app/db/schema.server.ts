@@ -43,7 +43,7 @@ export const session = sqliteTable("session", {
   id: text("id").primaryKey(),
   userId: text("userId")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
   twoFactorVerified: integer("two_factor_verified", { mode: "boolean" })
     .notNull()
@@ -68,7 +68,7 @@ export const emailVerification = sqliteTable("email_verification", {
     .$defaultFn(() => crypto.randomUUID()),
   userId: text("userId")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
   code: text("code").notNull(),
   expiresAt: integer("expires_at").notNull(),
@@ -92,7 +92,7 @@ export const passwordReset = sqliteTable("password_reset", {
     .$defaultFn(() => crypto.randomUUID()),
   userId: text("userId")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
   code: text("code").notNull(),
   emailVerified: integer("email_verified", { mode: "boolean" })
@@ -123,7 +123,7 @@ export const connection = sqliteTable(
     providerId: text("providerId").notNull(),
     userId: text("userId")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),

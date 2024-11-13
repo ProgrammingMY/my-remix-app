@@ -1,44 +1,95 @@
-// app/services/auth.server.ts
-import { Authenticator } from "remix-auth";
-import { SessionType, UserType } from "~/db/schema.server";
-import { sessionStorage } from "~/utils/session.server";
+import {
+  commitSession,
+  createSession,
+  destroySession,
+  generateSessionToken,
+  getSession,
+  invalidateSession,
+  sessionStorage,
+  validateSessionToken,
+} from "~/utils/session.server";
 import * as z from "zod";
 import * as schema from "~/db/schema.server";
-import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
+import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { combineHeaders } from "./utils.server";
 import { redirect } from "@remix-run/cloudflare";
-import {
-  encodeBase32UpperCaseNoPadding,
-  encodeHexLowerCase,
-} from "@oslojs/encoding";
-import { sha256 } from "@oslojs/crypto/sha2";
 
-export const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30; // 30 days
-export const getSessionExpirationDate = () =>
-  new Date(Date.now() + SESSION_EXPIRATION_TIME);
-
-export const sessionKey = "sessionId";
+export const sessionToken = "token";
 
 const payloadSchema = z.object({
   email: z.string(),
   password: z.string(),
 });
 
-// Create an instance of the authenticator, pass a generic with what
-// strategies will return and will store in the session
-export const authenticator = new Authenticator<any>(sessionStorage);
+export async function isAuthenticated(
+  request: Request,
+  env: Env,
+  {
+    failedRedirect,
+    successRedirect,
+  }: {
+    failedRedirect?: string;
+    successRedirect?: string;
+  }
+) {
+  const cookieSession = await getSession(request.headers.get("Cookie"));
 
-export async function login({
-  email,
-  password,
-  env,
-}: {
-  email: UserType["email"];
-  password: string;
-  env: Env;
-}) {
+  const token = cookieSession.get(sessionToken);
+
+  if (!token && failedRedirect) {
+    return redirect(failedRedirect, {
+      headers: {
+        "Set-Cookie": await destroySession(cookieSession),
+      },
+    });
+  }
+
+  const { session, user } = await validateSessionToken(token, env);
+
+  // if the session is not valid, invalidate it and redirect to the login page
+  if ((!session || !user) && failedRedirect) {
+    await invalidateSession(token, env);
+    return redirect(failedRedirect, {
+      headers: {
+        "Set-Cookie": await destroySession(cookieSession),
+      },
+    });
+  }
+
+  if (user) {
+    if (successRedirect) {
+      return redirect(successRedirect, {
+        headers: {
+          "Set-Cookie": await commitSession(cookieSession),
+        },
+      });
+    }
+
+    return user;
+  }
+
+  return null;
+}
+
+// redirect with encode url
+export async function login(request: Request, env: Env) {
+  const formData = await request.formData();
+
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  let headers = new Headers();
+
+  if (!email || !password) {
+    const error = new Error();
+    error.message = "Email or password is required";
+    return {
+      error,
+      headers,
+    };
+  }
+
   const db = drizzle(env.DB_drizzle, { schema });
   const userInDb = await db.query.user.findFirst({
     where: eq(schema.user.email, email),
@@ -48,31 +99,76 @@ export async function login({
     },
   });
 
-  if (!userInDb || !userInDb.hashedPassword) return null;
+  if (!userInDb || !userInDb.hashedPassword) {
+    //return json({ success: false, message: "Invalid email or password" });
+    const error = new Error();
+    error.message = "Invalid email or password";
+    return {
+      error,
+      headers,
+    };
+  }
 
   const passwordMatch = await bcrypt.compare(password, userInDb.hashedPassword);
 
-  if (!passwordMatch) return null;
+  if (!passwordMatch) {
+    // return json({ success: false, message: "Invalid email or password" });
+    const error = new Error();
+    error.message = "Invalid email or password";
+    return {
+      error,
+      headers,
+    };
+  }
 
+  // create a new token session and store it in the database
   const token = generateSessionToken();
-  const session = await createSession(token, userInDb.id, db);
+  await createSession(token, userInDb.id, db);
 
-  return session;
+  // commit the session to the user's browser
+  const session = await getSession();
+  session.set(sessionToken, token);
+
+  headers.append("Set-Cookie", await commitSession(session));
+
+  return { error: undefined, headers };
 }
 
-export async function signup({
-  email,
-  password,
-  name,
-  env,
-}: {
-  email: UserType["email"];
-  name: UserType["name"];
-  password: string;
-  env: Env;
-}) {
-  const hashedPassword = await bcrypt.hash(password, 10);
+export async function signup(request: Request, env: Env) {
+  const formData = await request.formData();
+
+  const email = formData.get("email") as string;
+  const name = formData.get("name") as string;
+  const password = formData.get("password") as string;
+
+  // TODO: validate input
+
+  const headers = new Headers();
+
+  if (!email || !name || !password) {
+    const error = new Error("Email, name and password are required");
+    return {
+      error,
+      headers,
+    };
+  }
+
   const db = drizzle(env.DB_drizzle, { schema });
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(schema.user.email, email.toLowerCase()),
+  });
+
+  if (existingUser) {
+    const error = new Error();
+    error.message = "Email already exists";
+    return {
+      error,
+      headers,
+    };
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
 
   const user = await db
     .insert(schema.user)
@@ -85,28 +181,36 @@ export async function signup({
       id: schema.user.id,
     });
 
-  const token = generateSessionToken();
-  const session = await createSession(token, user[0].id, db);
+  // TODO: send a verification email to the user
 
-  return session;
+  const token = generateSessionToken();
+  await createSession(token, user[0].id, db);
+
+  // commit the session to the user's browser
+  const session = await getSession();
+  session.set(sessionToken, token);
+
+  headers.append("Set-Cookie", await commitSession(session));
+
+  return {
+    error: null,
+    headers,
+  };
 }
 
 export async function logout(
+  request: Request,
+  env: Env,
   {
-    request,
     redirectTo = "/",
-    env,
   }: {
-    request: Request;
     redirectTo?: string;
-    env: Env;
-  },
-  responseInit?: ResponseInit
+  }
 ) {
   const authSession = await sessionStorage.getSession(
-    request.headers.get("cookie")
+    request.headers.get("Cookie")
   );
-  const sessionId = authSession.get(sessionKey);
+  const sessionId = authSession.get(sessionToken);
   // if this fails, we still need to delete the session from the user's browser
   // and it doesn't do any harm staying in the db anyway.
   const db = drizzle(env.DB_drizzle, { schema });
@@ -114,86 +218,6 @@ export async function logout(
     await db.delete(schema.session).where(eq(schema.session.id, sessionId));
   }
   throw redirect(redirectTo, {
-    ...responseInit,
-    headers: combineHeaders(
-      { "set-cookie": await sessionStorage.destroySession(authSession) },
-      responseInit?.headers
-    ),
+    headers: { "Set-Cookie": await sessionStorage.destroySession(authSession) },
   });
 }
-
-export function generateSessionToken(): string {
-  const bytes = new Uint8Array(20);
-  crypto.getRandomValues(bytes);
-  const token = encodeBase32UpperCaseNoPadding(bytes);
-  return token;
-}
-
-export async function createSession(
-  token: string,
-  userId: string,
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  }
-): Promise<SessionType> {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const session = await db
-    .insert(schema.session)
-    .values({
-      id: sessionId,
-      userId,
-      expiresAt: new Date(Date.now() + SESSION_EXPIRATION_TIME),
-    })
-    .returning();
-  return session[0];
-}
-
-export async function validateSessionToken(
-  token: string,
-  env: Env
-): Promise<SessionValidationResult> {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const db = drizzle(env.DB_drizzle, { schema });
-  const result = await db
-    .select({ user: schema.user, session: schema.session })
-    .from(schema.session)
-    .innerJoin(schema.user, eq(schema.session.userId, schema.user.id))
-    .where(eq(schema.session.id, sessionId));
-
-  // return null if session not found in the token
-  if (result.length < 1) {
-    return { session: null, user: null };
-  }
-  const { user, session } = result[0];
-
-  // delete session if past expired date
-  if (Date.now() >= session.expiresAt.getTime()) {
-    await db.delete(schema.session).where(eq(schema.session.id, session.id));
-    return { session: null, user: null };
-  }
-
-  // extend expiry date if less than 15 days
-  if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
-    session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await db
-      .update(schema.session)
-      .set({
-        expiresAt: session.expiresAt,
-      })
-      .where(eq(schema.session.id, session.id));
-  }
-  return { session, user };
-}
-
-export async function invalidateSession(
-  sessionId: string,
-  env: Env
-): Promise<void> {
-  const db = drizzle(env.DB_drizzle, { schema });
-
-  await db.delete(schema.session).where(eq(schema.session.id, sessionId));
-}
-
-export type SessionValidationResult =
-  | { session: SessionType; user: UserType }
-  | { session: null; user: null };

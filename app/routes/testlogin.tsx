@@ -1,45 +1,113 @@
 // app/routes/login.tsx
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Form } from "@remix-run/react";
-import { authenticator } from "~/utils/auth.server";
+import { Form, Link, redirect, useActionData } from "@remix-run/react";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { isAuthenticated, login } from "~/utils/auth.server";
 
 // First we create our UI with the form doing a POST and the inputs with the
 // names we are going to use in the strategy
 export default function Screen() {
+    const data = useActionData<typeof action>();
+    const { error } = data ?? {};
     return (
-        <Form method="post">
-            <label htmlFor="email">Email</label>
-            <input type="email" name="email" required />
-            <label htmlFor="password">Password</label>
-            <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                required
-            />
-            <button>Log In</button>
-        </Form>
+        <div className="w-full min-h-[600px]">
+            <div className="flex items-center justify-center py-12">
+                <div className="mx-auto grid w-[320px] md:w-[400px] gap-6 border rounded-md p-6 shadow-sm">
+                    <div className="grid gap-2 text-center">
+                        <h1 className="text-3xl font-bold">Login</h1>
+                        <p className="text-balance text-muted-foreground">
+                            Enter your email below to login to your account
+                        </p>
+                    </div>
+                    <Form method="post">
+                        <div className="grid gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    placeholder="m@example.com"
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <div className="flex items-center">
+                                    <Label htmlFor="password">Password</Label>
+
+                                </div>
+                                <Input
+                                    type="password"
+                                    name="password"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </div>
+                            {error ? <p className="text-red-600">{error.message}</p> : null}
+                            <Button type="submit" className="w-full">
+                                Login
+                            </Button>
+                            <Button variant="outline" className="w-full">
+                                Login with Google
+                            </Button>
+                        </div>
+                    </Form>
+                    <div className="text-center">
+                        <Link
+                            to="/forgot-password"
+                            className="text-sm underline"
+                        >
+                            Forgot your password?
+                        </Link>
+                        <div className="mt-4 text-sm">
+                            Don&apos;t have an account?{" "}
+                            <Link to="/testsignup" className="underline">
+                                Sign up
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {/* <div className="hidden bg-muted lg:block">
+                <Image
+                        src="/placeholder.svg"
+                        alt="Image"
+                        width="1920"
+                        height="1080"
+                        className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                    />
+            </div> */}
+        </div>
     );
 }
 
 // Second, we need to export an action function, here we will use the
 // `authenticator.authenticate method`
-export async function action({ request }: ActionFunctionArgs) {
-    // we call the method with the name of the strategy we want to use and the
-    // request object, optionally we pass an object with the URLs we want the user
-    // to be redirected to after a success or a failure
-    return await authenticator.authenticate("user-pass", request, {
-        successRedirect: "/dashboard",
-        failureRedirect: "/testlogin",
+export async function action({ request, context }: ActionFunctionArgs) {
+    const { env } = context.cloudflare;
+
+    const { error, headers } = await login(request, env);
+
+    if (error) {
+        return {
+            error
+        };
+    }
+
+    return redirect('/dashboard', {
+        headers,
     });
 };
 
 // Finally, we can export a loader function where we check if the user is
 // authenticated with `authenticator.isAuthenticated` and redirect to the
 // dashboard if it is or return null if it's not
-export async function loader({ request }: LoaderFunctionArgs) {
-    // If the user is already authenticated redirect to /dashboard directly
-    return await authenticator.isAuthenticated(request, {
+export async function loader({ request, context }: LoaderFunctionArgs) {
+    const { env } = context.cloudflare;
+
+    return await isAuthenticated(request, env, {
         successRedirect: "/dashboard",
     });
 };

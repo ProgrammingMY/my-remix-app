@@ -1,56 +1,59 @@
-import { ActionFunction, json, LoaderFunction } from "@remix-run/cloudflare";
-import { Form, useActionData } from "@remix-run/react";
+import { ActionFunction, ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { Form, redirect, useActionData } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 
-import { signup } from "~/utils/auth.server"
-import { createUser } from "~/utils/user.server"
+import { isAuthenticated, signup } from "~/utils/auth.server"
 
-export const action: ActionFunction = async ({ request, context }) => {
-    try {
-        const { env } = context.cloudflare;
-        const form = await request.clone().formData();
-        
-        const email = form.get("email") as string;
-        const password = form.get("password") as string;
-        const name = form.get("name") as string;
+export async function loader({ request, context }: LoaderFunctionArgs) {
+    const { env } = context.cloudflare;
 
-        if (typeof email !== "string" || typeof password !== "string" || typeof name !== "string") {
-            return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
-        }
+    return await isAuthenticated(request, env, {
+        successRedirect: "/dashboard",
+    });
+};
 
-        if (!email.includes("@")) {
-            return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
-        }
+export const action = async ({ request, context }: ActionFunctionArgs) => {
 
-        if (!password.length) {
-            return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
-        }
+    const { env } = context.cloudflare;
+    // const form = await request.clone().formData();
 
-        if (!name.length) {
-            return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
-        }
+    // const email = form.get("email") as string;
+    // const password = form.get("password") as string;
+    // const name = form.get("name") as string;
 
-        const user = await signup({ email, password, name, env });
+    // if (typeof email !== "string" || typeof password !== "string" || typeof name !== "string") {
+    //     return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+    // }
 
-        if (!user) {
-            return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
-        }
+    // if (!email.includes("@")) {
+    //     return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+    // }
 
-        return json({ user }, { status: 200 });
+    // if (!password.length) {
+    //     return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+    // }
 
-    } catch (error) {
-        console.log(error);
-        return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+    // if (!name.length) {
+    //     return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+    // }
+
+    const { error, headers } = await signup(request, env);
+
+    if (!error) {
+        return redirect("/dashboard", {
+            headers
+        });
     }
+
+    return json({ error });
 
 }
 // First we create our UI with the form doing a POST and the inputs with the
 // names we are going to use in the strategy
 export default function Screen() {
-    const actionData = useActionData<typeof action>() || {} as { user: any };
+    const actionData = useActionData<typeof action>();
 
-    console.log(actionData);
     return (
         <div className="container flex flex-col justify-center pb-32 pt-20">
             <div className="text-center">
@@ -60,6 +63,7 @@ export default function Screen() {
                 </p>
             </div>
             <div className="mx-auto mt-16 min-w-full max-w-sm sm:min-w-[368px]">
+
                 <Form method="POST">
                     <div>
                         <label htmlFor="email" className="sr-only">
@@ -97,7 +101,7 @@ export default function Screen() {
                             required
                         />
                     </div>
-
+                    {actionData && actionData?.error && <p className="text-red-600">{actionData.error.message}</p>}
                     <Button
                         className="w-full"
                         type="submit"
