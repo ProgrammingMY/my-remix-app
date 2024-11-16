@@ -19,11 +19,11 @@ import * as schema from '~/db/schema.server';
 import { ChaptersList } from './chapters-list';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
-import { createSupabaseServerClient } from '~/utils/supabase.server';
 import { Link, Outlet, useFetcher, useLoaderData, useNavigate, useParams } from '@remix-run/react';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { ChapterType } from '~/db/schema.server';
+import { isAuthenticated } from '~/utils/auth.server';
 
 const formSchema = z.object({
     title: z.string().min(1),
@@ -37,14 +37,7 @@ export const action = async ({
     try {
         const { env } = context.cloudflare;
 
-        const { supabaseClient, headers } = createSupabaseServerClient(
-            request,
-            env
-        );
-
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {
@@ -90,9 +83,7 @@ export const action = async ({
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
-        const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {

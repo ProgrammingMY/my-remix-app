@@ -11,7 +11,7 @@ import {
   redirectWithWarning,
 } from "remix-toast";
 import * as schema from "~/db/schema.server";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({
   params,
@@ -29,14 +29,7 @@ export const loader = async ({
 
     const { env } = context.cloudflare;
 
-    const { supabaseClient, headers } = createSupabaseServerClient(
-      request,
-      env
-    );
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
       throw redirect("/login");

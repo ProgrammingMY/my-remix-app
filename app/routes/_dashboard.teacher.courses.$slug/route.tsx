@@ -2,7 +2,6 @@ import { IconBadge } from "~/components/icon-badge";
 import TitleForm from "./title-form";
 import { CircleDollarSign, File, LayoutDashboard, ListCheck } from "lucide-react";
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { useLoaderData } from "@remix-run/react";
 import { DescriptionForm } from "./description-form";
 import { PriceForm } from "./price-form";
@@ -15,6 +14,7 @@ import Action from "./action";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { isAuthenticated } from "~/utils/auth.server";
 
 
 export const action = async ({
@@ -25,14 +25,7 @@ export const action = async ({
     try {
         const { env } = context.cloudflare;
 
-        const { supabaseClient, headers } = createSupabaseServerClient(
-            request,
-            env
-        );
-
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {
@@ -118,9 +111,7 @@ export const action = async ({
 
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         return redirect("/login", {

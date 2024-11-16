@@ -2,35 +2,38 @@ import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { Outlet, useLoaderData } from "@remix-run/react"
 import Navbar from "~/components/navbar/navbar";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
+import { SidebarProvider } from "~/components/ui/sidebar";
+import { ClientUserType } from "~/lib/types";
+import { isAuthenticated } from "~/utils/auth.server";
 
-// export const loader = async ({ context, request }: LoaderFunctionArgs) => {
-//     const { env } = context.cloudflare;
+export const loader = async ({ request, context }: LoaderFunctionArgs) => {
+    const { env } = context.cloudflare;
 
-//     const { supabaseClient, headers } = createSupabaseServerClient(request, env);
+    const { user, headers } = await isAuthenticated(request, env);
 
-//     const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+        return redirect("/login", {
+            headers
+        });
+    }
 
-//     if (!user) {
-//         return redirect("/login", {
-//             headers
-//         });
-//     }
-
-//     return { id: user.id };
-// }
+    return {
+        user
+    };
+}
 
 export default function Dashboard() {
+    const { user } = useLoaderData<typeof loader>() as { user: ClientUserType };
+
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar user={user} />
             <div className="h-[80px] fixed w-full top-0 z-40">
-                <Navbar />
+                <Navbar userName={user.name} />
             </div>
             <div className="h-full w-full">
                 <main className="h-full mt-6 pt-[80px] p-6">
-                    <Outlet />
+                    <Outlet context={{ user }} />
                 </main>
             </div>
         </SidebarProvider>

@@ -2,18 +2,15 @@ import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare"
 import { Outlet, useLoaderData } from "@remix-run/react";
 import { drizzle } from "drizzle-orm/d1";
 import CourseSidebar from "~/components/course-sidebar/course-sidebar";
-import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import * as schema from "~/db/schema.server";
 import { and, asc, eq } from "drizzle-orm";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({ params, context, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
 
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         return redirect("/login", {
@@ -69,11 +66,11 @@ export default function CourseId() {
             />
             <SidebarTrigger className="h-10 w-10" />
             <SidebarInset>
-            <div className="h-full w-full">
-                <main className="h-full p-6">
-                    <Outlet />
-                </main>
-            </div>
+                <div className="h-full w-full">
+                    <main className="h-full p-6">
+                        <Outlet />
+                    </main>
+                </div>
             </SidebarInset>
         </SidebarProvider>
     )

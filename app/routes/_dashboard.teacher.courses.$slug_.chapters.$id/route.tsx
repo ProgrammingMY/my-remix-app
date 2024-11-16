@@ -1,10 +1,9 @@
 
-import { ArrowLeft, Eye, LayoutDashboard, Video } from 'lucide-react';
+import { Eye, LayoutDashboard, Video } from 'lucide-react';
 import { IconBadge } from '~/components/icon-badge';
 import { Banner } from '~/components/banner';
-import { ActionFunctionArgs, json, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
-import { Link, useLoaderData, useParams } from '@remix-run/react';
-import { createSupabaseServerClient } from '~/utils/supabase.server';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
+import { useLoaderData, useParams } from '@remix-run/react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { ChapterTitleForm } from './chapter-title-form';
 import { ChapterAccessForm } from './chapter-access-form';
@@ -15,20 +14,14 @@ import ChapterAction from './chapter-action';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq } from 'drizzle-orm';
 import { ChapterType, MuxDataType } from '~/db/schema.server';
+import { isAuthenticated } from '~/utils/auth.server';
 
 
 export const action = async ({ context, params, request }: ActionFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
 
-        const { supabaseClient, headers } = createSupabaseServerClient(
-            request,
-            env
-        );
-
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {
@@ -183,14 +176,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
 
-    const { supabaseClient, headers } = createSupabaseServerClient(
-        request,
-        env
-    );
-
-    const {
-        data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         throw redirect("/login", {

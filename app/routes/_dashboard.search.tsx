@@ -5,9 +5,9 @@ import { drizzle } from 'drizzle-orm/d1';
 import { CoursesList } from '~/components/courses-list';
 import { CategoryType, CourseType } from '~/db/schema.server';
 import { getProgress } from '~/utils/getProgress.server';
-import { createSupabaseServerClient } from '~/utils/supabase.server';
 import * as schema from '~/db/schema.server';
 import { desc, eq } from 'drizzle-orm';
+import { isAuthenticated } from '~/utils/auth.server';
 
 type CourseWithProgressWithCategory = CourseType & {
     category: CategoryType | null;
@@ -18,11 +18,8 @@ type CourseWithProgressWithCategory = CourseType & {
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
-        const { supabaseClient, headers } = createSupabaseServerClient(request, env);
 
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {
@@ -31,7 +28,7 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         }
 
         const db = drizzle(env.DB_drizzle, { schema });
-        
+
         const courses = await db.query.course.findMany({
             where: eq(schema.course.isPublished, true),
             with: {

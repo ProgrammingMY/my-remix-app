@@ -9,7 +9,6 @@ import {
     CardTitle,
 } from "~/components/ui/card"
 import { Separator } from "~/components/ui/separator"
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import * as schema from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import { Form, useLoaderData, useParams } from "@remix-run/react";
@@ -18,15 +17,13 @@ import { formatPrice } from "~/lib/format";
 import { jsonWithError, jsonWithSuccess, redirectWithWarning } from "remix-toast";
 import { Button } from "~/components/ui/button";
 import { CreditCard } from "lucide-react";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const action = async ({ request, context, params }: ActionFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
-        const { supabaseClient } = createSupabaseServerClient(request, env);
 
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             throw redirect("/login");
@@ -100,11 +97,8 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
 
 export const loader = async ({ params, context, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
-    const { supabaseClient } = createSupabaseServerClient(request, env);
 
-    const {
-        data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         throw redirect("/login");

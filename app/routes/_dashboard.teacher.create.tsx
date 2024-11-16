@@ -1,22 +1,21 @@
 import { drizzle } from "drizzle-orm/d1";
 import { ActionFunctionArgs, redirect } from '@remix-run/cloudflare'
-import { Form, Link, useNavigation } from '@remix-run/react'
+import { Form, Link, useNavigation, useOutletContext } from '@remix-run/react'
 import { redirectWithError, redirectWithSuccess } from 'remix-toast'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
-import { createSupabaseServerClient } from '~/utils/supabase.server'
 import * as schema from "~/db/schema.server";
 import { Loader2 } from "lucide-react";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
         const formData = await request.formData();
+
         const { env } = context.cloudflare;
 
-        const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {

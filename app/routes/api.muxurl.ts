@@ -1,7 +1,7 @@
 import Mux from "@mux/mux-node";
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { jsonWithError } from "remix-toast";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({ context, request }: LoaderFunctionArgs) => {
   try {
@@ -16,14 +16,7 @@ export const loader = async ({ context, request }: LoaderFunctionArgs) => {
       return json({ id: "", url: "" });
     }
 
-    const { supabaseClient, headers } = createSupabaseServerClient(
-      request,
-      env
-    );
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
       return redirect("/login", {

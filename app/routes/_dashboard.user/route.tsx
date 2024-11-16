@@ -2,7 +2,6 @@ import { CoursesList } from "~/components/courses-list";
 import { CheckCircle, Clock } from "lucide-react";
 import { InfoCard } from "./info-card";
 import { defer, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { useLoaderData } from "@remix-run/react";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
