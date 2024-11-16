@@ -32,7 +32,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, db);
 
     if (!emailVerificationRequest) {
-        return redirect("/testsignup", {
+        return redirect("/signup", {
             headers
         });
     }
@@ -58,7 +58,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     }).where(eq(schema.user.id, emailVerificationRequest.userId));
 
     // return to dashboard
-    return redirect("/dashboard", {
+    return redirect("/user", {
         headers
     });
 }

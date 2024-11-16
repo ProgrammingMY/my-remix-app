@@ -6,19 +6,16 @@ import { isAuthenticated, logout } from "~/utils/auth.server";
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     const { env } = context.cloudflare;
     return await logout(request, env, {
-        redirectTo: "/testlogin",
+        redirectTo: "/login",
     })
 }
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
 
-    const user = await isAuthenticated(request, env, {
-        failedRedirect: "/testlogin",
-    })
-
+    const { user, headers } = await isAuthenticated(request, env);
     if (!user) {
-        return redirect("/testlogin");
+        return redirect("/login");
     }
 
     return user;

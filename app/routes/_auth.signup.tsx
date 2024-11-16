@@ -12,7 +12,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
     const { user, headers } = await isAuthenticated(request, env);
 
     if (user && user.emailVerified) {
-        return redirect("/dashboard", {
+        return redirect("/user", {
             headers
         });
     }

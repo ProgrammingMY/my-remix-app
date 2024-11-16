@@ -81,7 +81,7 @@ export default function Screen() {
                 </Link>
                 <div className="mt-4 text-sm">
                     Don&apos;t have an account?{" "}
-                    <Link to="/testsignup" className="underline">
+                    <Link to="/signup" className="underline">
                         Sign up
                     </Link>
                 </div>
