@@ -71,7 +71,7 @@ export const emailVerification = sqliteTable("email_verification", {
     .references(() => user.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
   code: text("code").notNull(),
-  expiresAt: integer("expires_at").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
 
 // Email verification relation

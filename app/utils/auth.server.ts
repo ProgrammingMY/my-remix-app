@@ -14,6 +14,11 @@ import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "@remix-run/cloudflare";
+import {
+  prepareEmailVerification,
+  sendVerificationEmail,
+  setEmailVerificationCookie,
+} from "./verify.server";
 
 export const sessionToken = "token";
 
@@ -22,54 +27,39 @@ const payloadSchema = z.object({
   password: z.string(),
 });
 
-export async function isAuthenticated(
-  request: Request,
-  env: Env,
-  {
-    failedRedirect,
-    successRedirect,
-  }: {
-    failedRedirect?: string;
-    successRedirect?: string;
-  }
-) {
+export async function isAuthenticated(request: Request, env: Env) {
   const cookieSession = await getSession(request.headers.get("Cookie"));
 
   const token = cookieSession.get(sessionToken);
 
-  if (!token && failedRedirect) {
-    return redirect(failedRedirect, {
-      headers: {
-        "Set-Cookie": await destroySession(cookieSession),
-      },
-    });
+  const headers = new Headers();
+
+  if (!token) {
+    headers.append("Set-Cookie", await destroySession(cookieSession));
+    return {
+      user: null,
+      headers,
+    };
   }
 
   const { session, user } = await validateSessionToken(token, env);
 
   // if the session is not valid, invalidate it and redirect to the login page
-  if ((!session || !user) && failedRedirect) {
+  if (!session || !user) {
     await invalidateSession(token, env);
-    return redirect(failedRedirect, {
-      headers: {
-        "Set-Cookie": await destroySession(cookieSession),
-      },
-    });
+    headers.append("Set-Cookie", await destroySession(cookieSession));
+    return {
+      user: null,
+      headers,
+    };
   }
 
-  if (user) {
-    if (successRedirect) {
-      return redirect(successRedirect, {
-        headers: {
-          "Set-Cookie": await commitSession(cookieSession),
-        },
-      });
-    }
+  headers.append("Set-Cookie", await commitSession(cookieSession));
 
-    return user;
-  }
-
-  return null;
+  return {
+    user,
+    headers,
+  };
 }
 
 // redirect with encode url
@@ -143,7 +133,7 @@ export async function signup(request: Request, env: Env) {
 
   // TODO: validate input
 
-  const headers = new Headers();
+  let headers = new Headers();
 
   if (!email || !name || !password) {
     const error = new Error("Email, name and password are required");
@@ -179,18 +169,25 @@ export async function signup(request: Request, env: Env) {
     })
     .returning({
       id: schema.user.id,
+      email: schema.user.email,
     });
 
-  // TODO: send a verification email to the user
+  // create a verification request
+  const verificationRequest = await prepareEmailVerification({
+    request,
+    userId: user[0].id,
+    email: user[0].email,
+    db: drizzle(env.DB_drizzle, { schema }),
+  });
 
-  const token = generateSessionToken();
-  await createSession(token, user[0].id, db);
+  // send a verification email to the user
+  await sendVerificationEmail(
+    verificationRequest.email,
+    verificationRequest.code
+  );
 
-  // commit the session to the user's browser
-  const session = await getSession();
-  session.set(sessionToken, token);
-
-  headers.append("Set-Cookie", await commitSession(session));
+  // store the verification id in a cookie
+  await setEmailVerificationCookie(headers, verificationRequest.id);
 
   return {
     error: null,

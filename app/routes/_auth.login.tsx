@@ -1,71 +1,142 @@
-import { ActionFunctionArgs, json, redirect } from '@remix-run/cloudflare';
-import { Form, Link, useActionData } from '@remix-run/react'
-import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
-import { Label } from '~/components/ui/label';
-import { createSupabaseServerClient } from '~/utils/supabase.server';
+// app/routes/login.tsx
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { Form, Link, redirect, useActionData } from "@remix-run/react";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { isAuthenticated, login } from "~/utils/auth.server";
 
-export const action = async ({ context, request }: ActionFunctionArgs) => {
+// First we create our UI with the form doing a POST and the inputs with the
+// names we are going to use in the strategy
+export default function Screen() {
+    const data = useActionData<typeof action>();
+    const { error } = data ?? {};
+    return (
+        <>
+            <Link
+                to="/"
+                className="absolute left-8 top-8 py-2 px-4 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1"
+                >
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>{" "}
+                Back
+            </Link>
+            <div className="grid gap-2 text-center">
+                <h1 className="text-3xl font-bold">Login</h1>
+                <p className="text-balance text-muted-foreground">
+                    Enter your email below to login to your account
+                </p>
+            </div>
+            <Form method="post">
+                <div className="grid gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            name="email"
+                            placeholder="m@example.com"
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <div className="flex items-center">
+                            <Label htmlFor="password">Password</Label>
+
+                        </div>
+                        <Input
+                            type="password"
+                            name="password"
+                            autoComplete="current-password"
+                            required
+                        />
+                    </div>
+                    {error ? <p className="text-red-600">{error.message}</p> : null}
+                    <Button type="submit" className="w-full">
+                        Login
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                        Login with Google
+                    </Button>
+                </div>
+            </Form>
+            <div className="text-center">
+                <Link
+                    to="/forgot-password"
+                    className="text-sm underline"
+                >
+                    Forgot your password?
+                </Link>
+                <div className="mt-4 text-sm">
+                    Don&apos;t have an account?{" "}
+                    <Link to="/testsignup" className="underline">
+                        Sign up
+                    </Link>
+                </div>
+            </div>
+            {/* <div className="hidden bg-muted lg:block">
+                <Image
+                        src="/placeholder.svg"
+                        alt="Image"
+                        width="1920"
+                        height="1080"
+                        className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+                    />
+            </div> */}
+        </>
+
+    );
+}
+
+// Second, we need to export an action function, here we will use the
+// `authenticator.authenticate method`
+export async function action({ request, context }: ActionFunctionArgs) {
     const { env } = context.cloudflare;
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
 
-    const formData = await request.formData();
-
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    if (!email || !password) {
-        return json({ success: false, message: "Email or password is required" })
-    }
-
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { error, headers } = await login(request, env);
 
     if (error) {
-        return json({ success: false, message: "Invalid email or password" })
+        return {
+            error
+        };
     }
 
-    return redirect("/user", {
-        headers
+    return redirect('/user', {
+        headers,
     });
 };
 
+// Finally, we can export a loader function where we check if the user is
+// authenticated with `authenticator.isAuthenticated` and redirect to the
+// dashboard if it is or return null if it's not
+export async function loader({ request, context }: LoaderFunctionArgs) {
+    const { env } = context.cloudflare;
 
-export default function LoginPage() {
-    const actionResponse = useActionData<typeof action>()
+    const { user, headers } = await isAuthenticated(request, env);
 
-    return (
-        <Form method="post" className="flex-1 flex flex-col w-full justify-center gap-2 text-foreground [&>input]:mb-6 max-w-md p-4 mt-8">
-            <h1 className="text-2xl font-medium">Log in</h1>
-            <p className="text-sm text-foreground/60">
-                Don't have an account?{" "}
-                <Link className="text-blue-600 font-medium underline" to={"/register"}>
-                    Sign up
-                </Link>
-            </p>
-            <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-                <Label htmlFor="email">Email</Label>
-                <Input name="email" placeholder="you@example.com" required />
-                <div className="flex justify-between items-center">
-                    <Label htmlFor="password">Password</Label>
+    if (user && user.emailVerified) {
+        return redirect("/user", {
+            headers
+        });
+    }
 
-                    <Link
-                        className="text-sm text-blue-600 underline"
-                        to="/forgot-password"
-                    >
-                        Forgot Password?
-                    </Link>
-                </div>
-                <Input
-                    type="password"
-                    name="password"
-                    placeholder="••••••••"
-                    required
-                />
-                <Button type="submit" variant={"default"} >
-                    Log in
-                </Button>
-                {actionResponse ? actionResponse.success ? null : <p className="text-red-600">{actionResponse.message}</p> : null}
-            </div>
-        </Form>
-    )
-}
+    if (user && !user.emailVerified) {
+        return redirect("/verify", {
+            headers
+        });
+    }
+
+    return null;
+};

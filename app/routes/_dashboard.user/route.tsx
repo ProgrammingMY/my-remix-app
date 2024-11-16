@@ -9,6 +9,7 @@ import * as schema from "~/db/schema.server";
 import { eq } from "drizzle-orm";
 import { CategoryType, ChapterType, CourseType } from "~/db/schema.server";
 import { getProgress } from "~/utils/getProgress.server";
+import { isAuthenticated } from "~/utils/auth.server";
 
 type CourseWithProgressWithCategory = CourseType & {
     category: CategoryType;
@@ -19,11 +20,8 @@ type CourseWithProgressWithCategory = CourseType & {
 export const loader = async ({ request, context, params }: LoaderFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
-        const { supabaseClient, headers } = createSupabaseServerClient(request, env);
 
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             return redirect("/login", {

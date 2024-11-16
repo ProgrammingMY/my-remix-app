@@ -16,6 +16,7 @@ type SafeUserType = {
   name: string | null;
   imageUrl: string | null;
   id: string;
+  emailVerified: boolean;
   role: {
     name: string;
   } | null;
@@ -24,6 +25,18 @@ type SafeUserType = {
 export const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30; // 30 days
 export const getSessionExpirationDate = () =>
   new Date(Date.now() + SESSION_EXPIRATION_TIME);
+
+// email verification cookie
+export const verificationStorage = createCookieSessionStorage({
+  cookie: {
+    name: "_verification", // use any name you want here
+    sameSite: "lax", // this helps with CSRF
+    path: "/", // remember to add this so the cookie will work in all routes
+    httpOnly: true, // for security reasons, make this cookie http only
+    secrets: ["1SW5RS+fenaifF+s7+MOhw=="], // replace this with an actual secret
+    secure: process.env.NODE_ENV === "production", // enable this in prod only
+  },
+});
 
 // export the whole sessionStorage object
 export const sessionStorage = createCookieSessionStorage({
@@ -89,6 +102,7 @@ export async function validateSessionToken(
           name: true,
           email: true,
           imageUrl: true,
+          emailVerified: true,
         },
       },
     },
