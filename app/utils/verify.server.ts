@@ -158,10 +158,6 @@ export async function getUserEmailVerificationRequest(
     return null;
   }
 
-  if (Date.now() >= emailVerification.expiresAt.getTime()) {
-    return null;
-  }
-
   return emailVerification;
 }
 
@@ -265,12 +261,22 @@ export async function verifyTotp({
     ),
     columns: {
       code: true,
+      expiresAt: true,
     },
   });
 
   if (!codeFromDb) {
     const error = {
       message: "Cannot verify code, request another code",
+    };
+    return {
+      error,
+    };
+  }
+
+  if (Date.now() >= codeFromDb.expiresAt.getTime()) {
+    const error = {
+      message: "Code expired",
     };
     return {
       error,

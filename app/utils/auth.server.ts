@@ -209,7 +209,6 @@ export async function logout(
   const { session } = await validateSessionToken(token, env);
   // if this fails, we still need to delete the session from the user's browser
   // and it doesn't do any harm staying in the db anyway.
-  console.log(session);
   if (session) {
     await invalidateSession(session.id, env);
   }
