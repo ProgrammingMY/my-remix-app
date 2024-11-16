@@ -1,6 +1,7 @@
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
@@ -14,7 +15,7 @@ import {
     useSidebar,
 } from "~/components/ui/sidebar"
 import { CourseSidebarItem } from "./course-sidebar-item";
-import { CheckCircle, PlayCircle, Lock } from "lucide-react";
+import { CheckCircle, PlayCircle, Lock, LogOutIcon } from "lucide-react";
 import { Link, useLocation } from "@remix-run/react";
 import { ChapterType, CourseType, PurchaseType, UserProgressType } from "~/db/schema.server";
 
@@ -57,6 +58,18 @@ const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
+            <SidebarFooter>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <Link to={"/user"}>
+                            <SidebarMenuButton>
+                                <LogOutIcon />
+                                Exit Course
+                            </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     )
 }

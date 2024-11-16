@@ -15,10 +15,13 @@ import {
 } from "~/components/ui/sidebar"
 
 import { Link, useFetcher, useLocation } from "@remix-run/react";
-import { BadgeCheck, BarChart, Bell, Book, ChevronsUpDown, CreditCard, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
+import { BadgeCheck, BarChart, Bell, Book, BookOpenTextIcon, ChevronsUpDown, CreditCard, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
 import { cn } from "~/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { UserType } from "~/db/schema.server";
+import { ClientUserType } from "~/lib/types";
+import { capitalizeFirstLetter } from "~/lib/format";
 
 const guestRoutes = [
     {
@@ -50,7 +53,11 @@ const teacherRoutes = [
     }
 ]
 
-export function AppSidebar() {
+export function AppSidebar({
+    user
+}: {
+    user: ClientUserType;
+}) {
     const { pathname } = useLocation();
     const { state } = useSidebar();
     const fetcher = useFetcher();
@@ -112,16 +119,16 @@ export function AppSidebar() {
                                     <Avatar className="h-8 w-8 rounded-lg">
                                         <AvatarImage
                                             src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
-                                            alt={"User Name"}
+                                            alt={user.name}
                                         />
                                         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">
-                                            {"User Name"}
+                                            {capitalizeFirstLetter(user.name)}
                                         </span>
                                         <span className="truncate text-xs">
-                                            {"User Email"}
+                                            {user.email}
                                         </span>
                                     </div>
                                     <ChevronsUpDown className="ml-auto size-4" />
@@ -138,7 +145,7 @@ export function AppSidebar() {
                                         <Avatar className="h-8 w-8 rounded-lg">
                                             <AvatarImage
                                                 src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
-                                                alt={"User Name"}
+                                                alt={user.name}
                                             />
                                             <AvatarFallback className="rounded-lg">
                                                 CN
@@ -146,10 +153,10 @@ export function AppSidebar() {
                                         </Avatar>
                                         <div className="grid flex-1 text-left text-sm leading-tight">
                                             <span className="truncate font-semibold">
-                                                {"User Name"}
+                                                {capitalizeFirstLetter(user.name)}
                                             </span>
                                             <span className="truncate text-xs">
-                                                {"User Email"}
+                                                {user.email}
                                             </span>
                                         </div>
                                     </div>
@@ -160,20 +167,17 @@ export function AppSidebar() {
                                         <Sparkles />
                                         Upgrade to Pro
                                     </DropdownMenuItem>
+                                    <Link to={isTeacherPage ? "/user" : "/teacher/courses"}>
+                                        <DropdownMenuItem >
+                                            <BookOpenTextIcon />
+                                            {isTeacherPage ? "Change To Student Mode" : "Change To Teacher Mode"}
+                                        </DropdownMenuItem>
+                                    </Link>
                                 </DropdownMenuGroup>
-                                <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
                                         <BadgeCheck />
                                         Account
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <CreditCard />
-                                        Billing
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Bell />
-                                        Notifications
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
