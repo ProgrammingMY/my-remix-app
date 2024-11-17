@@ -20,8 +20,9 @@ import { cn } from "~/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { UserType } from "~/db/schema.server";
-import { ClientUserType } from "~/lib/types";
+import { ClientUserType, SafeUserType } from "~/lib/types";
 import { capitalizeFirstLetter } from "~/lib/format";
+import { isTeacher } from "~/lib/isTeacher";
 
 const guestRoutes = [
     {
@@ -34,11 +35,6 @@ const guestRoutes = [
         label: "Search",
         icon: Search,
     },
-    {
-        href: "/teacher/courses",
-        label: "Teacher",
-        icon: Book,
-    }
 ]
 const teacherRoutes = [
     {
@@ -56,13 +52,13 @@ const teacherRoutes = [
 export function AppSidebar({
     user
 }: {
-    user: ClientUserType;
+    user: SafeUserType;
 }) {
     const { pathname } = useLocation();
     const { state } = useSidebar();
     const fetcher = useFetcher();
 
-    const isTeacherPage = pathname?.includes('/teacher');
+    const isTeacherPage = pathname?.includes('/teacher') && user.role?.name === "teacher";
 
     const items = isTeacherPage ? teacherRoutes : guestRoutes;
 
@@ -167,12 +163,15 @@ export function AppSidebar({
                                         <Sparkles />
                                         Upgrade to Pro
                                     </DropdownMenuItem>
-                                    <Link to={isTeacherPage ? "/user" : "/teacher/courses"}>
-                                        <DropdownMenuItem >
-                                            <BookOpenTextIcon />
-                                            {isTeacherPage ? "Change To Student Mode" : "Change To Teacher Mode"}
-                                        </DropdownMenuItem>
-                                    </Link>
+                                    {isTeacher(user) && (
+                                        <Link to={isTeacherPage ? "/user" : "/teacher/courses"}>
+                                            <DropdownMenuItem >
+                                                <BookOpenTextIcon />
+                                                {isTeacherPage ? "Change To Student Mode" : "Change To Teacher Mode"}
+                                            </DropdownMenuItem>
+                                        </Link>
+                                    )}
+
                                 </DropdownMenuGroup>
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>

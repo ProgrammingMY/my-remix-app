@@ -12,13 +12,13 @@ export interface ChapterFormProps {
 
 export interface SafeUserType {
   email: string;
-  name: string | null;
+  name: string;
   imageUrl: string | null;
   id: string;
   emailVerified: boolean;
   role: {
     name: string;
-  } | null;
+  };
 }
 
 export interface ClientUserType {

@@ -19,7 +19,7 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   name: text("name"),
   imageUrl: text("imageUrl"),
-  roleId: text("roleId").references(() => role.id),
+  roleId: integer("roleId").references(() => role.id),
   hashedPassword: text("hashedPassword"),
   emailVerified: integer("emailVerified", { mode: "boolean" })
     .default(false)
@@ -143,9 +143,7 @@ export const connection = sqliteTable(
 
 // Role table
 export const role = sqliteTable("role", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
 });
 

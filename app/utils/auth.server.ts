@@ -160,12 +160,20 @@ export async function signup(request: Request, env: Env) {
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
+  const studentRoleId = await db.query.role.findFirst({
+    where: eq(schema.role.name, "student"),
+    columns: {
+      id: true,
+    },
+  });
+
   const user = await db
     .insert(schema.user)
     .values({
       email: email.toLowerCase(),
       name,
       hashedPassword,
+      roleId: studentRoleId?.id,
     })
     .returning({
       id: schema.user.id,
