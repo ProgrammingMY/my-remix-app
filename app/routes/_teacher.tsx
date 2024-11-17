@@ -17,12 +17,18 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
         });
     }
 
+    if (user.role?.name !== "teacher") {
+        return redirect("/user", {
+            headers
+        });
+    }
+
     return {
         user
     };
 }
 
-export default function Dashboard() {
+export default function TeacherLayout() {
     const { user } = useLoaderData<typeof loader>() as { user: SafeUserType };
 
     return (
