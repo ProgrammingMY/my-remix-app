@@ -115,6 +115,13 @@ export default function Screen() {
                     >
                         Sign Up
                     </Button>
+                    <Button
+                        className="w-full"
+                        type="button"
+                        variant={"outline"}
+                    >
+                        Continue with Google
+                    </Button>
                     <p className="text-sm text text-foreground/60">
                         Already have an account?{" "}
                         <Link className="text-blue-600 font-medium underline" to="/login">
