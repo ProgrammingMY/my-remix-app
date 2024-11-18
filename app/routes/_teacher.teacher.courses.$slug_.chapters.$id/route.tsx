@@ -9,11 +9,10 @@ import { ChapterTitleForm } from './chapter-title-form';
 import { ChapterAccessForm } from './chapter-access-form';
 import { ChapterVideoForm } from './chapter-video-form';
 import * as schema from '~/db/schema.server';
-import Mux from '@mux/mux-node';
 import ChapterAction from './chapter-action';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq } from 'drizzle-orm';
-import { ChapterType, MuxDataType } from '~/db/schema.server';
+import { ChapterType } from '~/db/schema.server';
 import { isAuthenticated } from '~/utils/auth.server';
 import { deleteVideo } from '~/utils/bunny.server';
 
@@ -58,26 +57,17 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
             }
 
             if (chapter.videoId) {
-                const mux = new Mux({
-                    tokenId: env.MUX_TOKEN_ID,
-                    tokenSecret: env.MUX_TOKEN_SECRET,
-                });
-
-                if (!mux) {
-                    throw new Error("Mux is not configured");
-                }
-
-                const existingVideo = await db.query.muxData.findFirst({
-                    where: eq(schema.muxData.chapterId, params.id!),
+                const existingVideo = await db.query.bunnyData.findFirst({
+                    where: eq(schema.bunnyData.chapterId, params.id!),
                 })
 
                 if (existingVideo) {
-                    await mux.video.assets.delete(existingVideo.assetId);
+                    await deleteVideo(existingVideo.videoId, existingVideo.libraryId, env);
                     await db
-                        .delete(schema.muxData)
+                        .delete(schema.bunnyData)
                         .where(and(
-                            eq(schema.muxData.chapterId, params.id!),
-                            eq(schema.muxData.assetId, existingVideo.assetId)
+                            eq(schema.bunnyData.chapterId, params.id!),
+                            eq(schema.bunnyData.videoId, existingVideo.videoId)
                         ));
                 }
             }
@@ -119,7 +109,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
         if (values.videoId) {
             // check if bunny video already exists
             const existingVideo = await db.query.bunnyData.findFirst({
-                where: eq(schema.muxData.chapterId, params.id!),
+                where: eq(schema.bunnyData.chapterId, params.id!),
             })
 
             // delete video from bunny if it exists

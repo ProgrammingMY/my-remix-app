@@ -67,7 +67,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
     const {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -91,7 +91,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
     return {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -105,7 +105,7 @@ const ChapterIdPage = () => {
     const {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -141,7 +141,8 @@ const ChapterIdPage = () => {
                         title={chapter.title}
                         courseSlug={params.slug!}
                         nextChapterId={nextChapter?.id}
-                        playbackId={muxData?.playbackId!}
+                        videoId={bunnyData?.videoId}
+                        libraryId={bunnyData?.libraryId}
                         isLocked={isLocked}
                         completeOnEnd={completeOnEnd}
                     />

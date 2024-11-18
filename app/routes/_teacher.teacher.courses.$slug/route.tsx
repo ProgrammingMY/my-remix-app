@@ -9,12 +9,12 @@ import { ImageForm } from "./image-form";
 import { AttachmentForm } from "./attachment-form";
 import { ChaptersForm } from "./chapters-form";
 import { jsonWithError, jsonWithSuccess, redirectWithSuccess } from "remix-toast";
-import Mux from "@mux/mux-node";
 import Action from "./action";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { isAuthenticated } from "~/utils/auth.server";
+import { deleteVideo } from "~/utils/bunny.server";
 
 
 export const action = async ({
@@ -51,23 +51,14 @@ export const action = async ({
                 return jsonWithError("Error", "Course not found");
             }
 
-            const mux = new Mux({
-                tokenId: env.MUX_TOKEN_ID,
-                tokenSecret: env.MUX_TOKEN_SECRET,
-            });
-
-            if (!mux) {
-                throw new Error("Mux is not configured");
-            }
-
             for (const chapter of course.chapters) {
-                const muxData = await db.query.muxData.findFirst({
+                const bunnyData = await db.query.bunnyData.findFirst({
                     where: and(
-                        eq(schema.muxData.chapterId, chapter.id),
+                        eq(schema.bunnyData.chapterId, chapter.id),
                     )
                 })
-                if (muxData?.assetId) {
-                    await mux.video.assets.delete(muxData.assetId);
+                if (bunnyData) {
+                    await deleteVideo(bunnyData.videoId, bunnyData.libraryId, env);
                 }
             }
 

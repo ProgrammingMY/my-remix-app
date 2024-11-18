@@ -1,13 +1,6 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
-import MuxUploader from "@mux/mux-uploader-react";
-import { json, redirect } from "@remix-run/node";
-import { Form, Link, useActionData, useFetcher, useLoaderData } from "@remix-run/react";
+import {  useFetcher } from "@remix-run/react";
 import { useCallback, useEffect, useState } from "react";
-import Mux from "@mux/mux-node";
-import { Button } from "~/components/ui/button";
 import * as tus from 'tus-js-client';
-import { generateUploadSignature } from "~/utils/bunny.server";
-import { set } from "zod";
 import Dropzone, { FileRejection } from "react-dropzone-esm";
 import { UploadIcon } from "lucide-react";
 import { cn } from "~/lib/utils";
@@ -38,6 +31,9 @@ export default function BunnyUploader({
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const accept = {
+    "image/*": [],
+  };
   const fetcher = useFetcher();
 
   useEffect(() => {
@@ -131,6 +127,7 @@ export default function BunnyUploader({
         maxFiles={1}
         multiple={false}
         disabled={uploading}
+        accept={{ "video/*": [] }}
       >
         {({ getRootProps, getInputProps, isDragActive }) => (
           <div

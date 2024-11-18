@@ -46,7 +46,7 @@ export const getChapter = async ({
       ),
     });
 
-    let muxData = null;
+    let bunnyData = null;
     let attachments: AttachmentType[] = [];
     let nextChapter: ChapterType | undefined = undefined;
 
@@ -57,8 +57,8 @@ export const getChapter = async ({
     }
 
     if (chapter.isFree || purchase) {
-      muxData = await db.query.muxData.findFirst({
-        where: eq(schema.muxData.chapterId, chapterId),
+      bunnyData = await db.query.bunnyData.findFirst({
+        where: eq(schema.bunnyData.chapterId, chapterId),
       });
 
       nextChapter = await db.query.chapter.findFirst({
@@ -81,7 +81,7 @@ export const getChapter = async ({
     return {
       chapter,
       course,
-      muxData,
+      bunnyData,
       attachments,
       nextChapter,
       userProgress,
@@ -92,7 +92,7 @@ export const getChapter = async ({
     return {
       chapter: null,
       course: null,
-      muxData: null,
+      bunnyData: null,
       attachments: [],
       nextChapter: null,
       userProgress: null,

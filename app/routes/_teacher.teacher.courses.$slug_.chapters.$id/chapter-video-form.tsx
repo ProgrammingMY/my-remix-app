@@ -16,12 +16,6 @@ interface ChapterVideoProps {
     chapterId: string;
 }
 
-type MuxUploaderProps = {
-    id: string;
-    url: string;
-} | null;
-
-
 const formSchema = z.object({
     videoId: z.string().min(1),
     libraryId: z.number(),
@@ -30,7 +24,6 @@ const formSchema = z.object({
 
 export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVideoProps) => {
     const [isEditting, setIsEditting] = useState(false);
-    const [uploadData, setUploadData] = useState<MuxUploaderProps>(null);
     const fetcher = useFetcher();
 
     const toggleEditting = () => {
@@ -48,7 +41,6 @@ export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVide
             jsonWithError({ result: "error" }, { message: "Something went wrong." });
         } finally {
             setIsEditting(false);
-            setUploadData(null);
         }
     }
 
@@ -82,7 +74,7 @@ export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVide
                             />
                         )}
                         {chapter.bunnyData && !isVideoReady(chapter.bunnyData.status) && (
-                            <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
+                            <div className='flex items-center justify-center bg-slate-200 rounded-md'>
                                 <Loader2 className='h-10 w-10 animate-spin' />
                                 Transcoding video... You can leave the page and come back later.
                             </div>

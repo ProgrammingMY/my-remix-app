@@ -285,40 +285,6 @@ export const attachment_relation = relations(attachment, ({ one }) => ({
   }),
 }));
 
-// MuxData table
-export const muxData = sqliteTable(
-  "muxData",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    assetId: text("assetId").notNull().unique(),
-    playbackId: text("playbackId"),
-    chapterId: text("chapterId")
-      .unique()
-      .references(() => chapter.id, { onDelete: "cascade" }),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`(current_timestamp)`),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`(current_timestamp)`),
-  },
-  (table) => {
-    return {
-      assetIndex: index("muxData_assetId").on(table.assetId),
-    };
-  }
-);
-
-// MuxData relation
-export const muxData_relation = relations(muxData, ({ one }) => ({
-  chapter: one(chapter, {
-    fields: [muxData.chapterId],
-    references: [chapter.id],
-  }),
-}));
-
 // BunnyData table
 export const bunnyData = sqliteTable(
   "bunnyData",
@@ -341,18 +307,10 @@ export const bunnyData = sqliteTable(
   },
   (table) => {
     return {
-      assetIndex: index("muxData_videoId").on(table.videoId),
+      assetIndex: index("bunnyData_videoId").on(table.videoId),
     };
   }
 );
-
-// MuxData relation
-export const bunnyData_relation = relations(bunnyData, ({ one }) => ({
-  chapter: one(chapter, {
-    fields: [bunnyData.chapterId],
-    references: [chapter.id],
-  }),
-}));
 
 // UserProgress table
 export const userProgress = sqliteTable(
@@ -435,7 +393,7 @@ export const toyyibCustomer = sqliteTable(
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => course.id),
+      .references(() => course.id, { onDelete: "cascade" }),
     billCode: text("billCode").notNull(),
     transactionId: text("transactionId"),
     status: text("status").$type<"pending" | "success" | "failed">(),
@@ -470,7 +428,6 @@ export type CourseType = typeof course.$inferSelect;
 export type ChapterType = typeof chapter.$inferSelect;
 export type AttachmentType = typeof attachment.$inferSelect;
 export type BunnyDataType = typeof bunnyData.$inferSelect;
-export type MuxDataType = typeof muxData.$inferSelect;
 export type CategoryType = typeof category.$inferSelect;
 export type UserProgressType = typeof userProgress.$inferSelect;
 export type PurchaseType = typeof purchase.$inferSelect;
