@@ -74,7 +74,7 @@ export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVide
                             />
                         )}
                         {chapter.bunnyData && !isVideoReady(chapter.bunnyData.status) && (
-                            <div className='flex items-center justify-center bg-slate-200 rounded-md'>
+                            <div className='flex items-center justify-center h-full bg-slate-200 rounded-md'>
                                 <Loader2 className='h-10 w-10 animate-spin' />
                                 Transcoding video... You can leave the page and come back later.
                             </div>

@@ -10,7 +10,7 @@ import {
 } from "~/utils/session.server";
 import * as z from "zod";
 import * as schema from "~/db/schema.server";
-import { drizzle } from "drizzle-orm/d1";
+import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "@remix-run/cloudflare";
@@ -45,7 +45,7 @@ export async function isAuthenticated(request: Request, env: Env) {
   const { session, user } = await validateSessionToken(token, env);
 
   // if the session is not valid, invalidate it and redirect to the login page
-  if (!session || !user) {
+  if (!session || !user || !user.emailVerified) {
     await invalidateSession(token, env);
     headers.append("Set-Cookie", await destroySession(cookieSession));
     return {
@@ -86,13 +86,15 @@ export async function login(request: Request, env: Env) {
     columns: {
       id: true,
       hashedPassword: true,
+      emailVerified: true,
+      email: true,
     },
   });
 
   if (!userInDb || !userInDb.hashedPassword) {
-    //return json({ success: false, message: "Invalid email or password" });
-    const error = new Error();
-    error.message = "Invalid email or password";
+    const error = {
+      message: "Invalid email or password",
+    };
     return {
       error,
       headers,
@@ -102,9 +104,22 @@ export async function login(request: Request, env: Env) {
   const passwordMatch = await bcrypt.compare(password, userInDb.hashedPassword);
 
   if (!passwordMatch) {
-    // return json({ success: false, message: "Invalid email or password" });
-    const error = new Error();
-    error.message = "Invalid email or password";
+    const error = {
+      message: "Invalid email or password",
+    };
+    return {
+      error,
+      headers,
+    };
+  }
+
+  // if user is not verified
+  if (!userInDb.emailVerified) {
+    await startTOTPProcess(request, headers, userInDb.id, userInDb.email, db);
+    const error = {
+      message: "Please verify your email",
+      redirectTo: "/verify",
+    };
     return {
       error,
       headers,
@@ -180,22 +195,7 @@ export async function signup(request: Request, env: Env) {
       email: schema.user.email,
     });
 
-  // create a verification request
-  const verificationRequest = await prepareEmailVerification({
-    request,
-    userId: user[0].id,
-    email: user[0].email,
-    db: drizzle(env.DB_drizzle, { schema }),
-  });
-
-  // send a verification email to the user
-  await sendVerificationEmail(
-    verificationRequest.email,
-    verificationRequest.code
-  );
-
-  // store the verification id in a cookie
-  await setEmailVerificationCookie(headers, verificationRequest.id);
+  await startTOTPProcess(request, headers, user[0].id, user[0].email, db);
 
   return {
     error: null,
@@ -207,7 +207,7 @@ export async function logout(
   request: Request,
   env: Env,
   {
-    redirectTo = "/",
+    redirectTo = "/login",
   }: {
     redirectTo?: string;
   }
@@ -225,4 +225,31 @@ export async function logout(
       "Set-Cookie": await sessionStorage.destroySession(cookieSession),
     },
   });
+}
+
+export async function startTOTPProcess(
+  request: Request,
+  headers: Headers,
+  userId: string,
+  email: string,
+  db: DrizzleD1Database<typeof schema> & {
+    $client: D1Database;
+  }
+) {
+  // create a verification request
+  const verificationRequest = await prepareEmailVerification({
+    request,
+    userId,
+    email,
+    db,
+  });
+
+  // send a verification email to the user
+  await sendVerificationEmail(
+    verificationRequest.email,
+    verificationRequest.code
+  );
+
+  // store the verification id in a cookie
+  await setEmailVerificationCookie(headers, verificationRequest.id);
 }

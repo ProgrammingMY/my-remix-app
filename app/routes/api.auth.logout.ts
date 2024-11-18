@@ -5,6 +5,6 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
   const { env } = context.cloudflare;
 
   return await logout(request, env, {
-    redirectTo: "/",
+    redirectTo: "/login",
   });
 };

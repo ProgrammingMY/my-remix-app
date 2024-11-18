@@ -1,12 +1,11 @@
-import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { useLoaderData, useOutletContext } from "@remix-run/react";
+import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { useLoaderData } from "@remix-run/react";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import { drizzle } from "drizzle-orm/d1";
-import { course, CourseType } from "~/db/schema.server";
+import { course } from "~/db/schema.server";
 import { desc, eq } from "drizzle-orm";
 import { isAuthenticated } from "~/utils/auth.server";
-import { ClientUserType } from "~/lib/types";
 
 export const loader = async ({
   context,

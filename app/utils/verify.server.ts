@@ -295,6 +295,14 @@ export async function verifyTotp({
     };
   }
 
+  // set email verified
+  await db
+    .update(schema.user)
+    .set({
+      emailVerified: true,
+    })
+    .where(eq(schema.user.id, userId));
+
   // remove the verification request
   await deleteEmailVerificationCookie(request, headers, db);
 

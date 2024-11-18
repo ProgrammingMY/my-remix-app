@@ -20,9 +20,3 @@ export interface SafeUserType {
     name: string;
   };
 }
-
-export interface ClientUserType {
-  name: string;
-  email: string;
-  imageUrl: string;
-}

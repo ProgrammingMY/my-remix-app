@@ -108,6 +108,11 @@ export async function action({ request, context }: ActionFunctionArgs) {
     const { error, headers } = await login(request, env);
 
     if (error) {
+        if (error.message === "Please verify your email") {
+            return redirect("/verify", {
+                headers
+            });
+        }
         return {
             error
         };

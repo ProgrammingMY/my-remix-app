@@ -1,8 +1,4 @@
-import {
-  ActionFunctionArgs,
-  json,
-  LoaderFunctionArgs,
-} from "@remix-run/cloudflare";
+import { json, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { generateUploadSignature } from "~/utils/bunny.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
