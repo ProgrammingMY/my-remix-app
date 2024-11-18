@@ -218,7 +218,7 @@ export const chapter = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     title: text("title").notNull(),
     description: text("description"),
-    uploadId: text("uploadId"),
+    videoId: text("videoId"),
     position: integer("position").notNull(),
     isPublished: integer("isPublished", { mode: "boolean" })
       .default(false)
@@ -244,6 +244,10 @@ export const chapter = sqliteTable(
 // Chapter relation
 export const chapter_relation = relations(chapter, ({ one, many }) => ({
   course: one(course, { fields: [chapter.courseId], references: [course.id] }),
+  bunnyData: one(bunnyData, {
+    fields: [chapter.videoId],
+    references: [bunnyData.videoId],
+  }),
   userProgress: many(userProgress),
 }));
 
@@ -311,6 +315,41 @@ export const muxData = sqliteTable(
 export const muxData_relation = relations(muxData, ({ one }) => ({
   chapter: one(chapter, {
     fields: [muxData.chapterId],
+    references: [chapter.id],
+  }),
+}));
+
+// BunnyData table
+export const bunnyData = sqliteTable(
+  "bunnyData",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    videoId: text("videoId").notNull().unique(),
+    libraryId: integer("libraryId", { mode: "number" }).notNull(),
+    status: integer("status", { mode: "number" }).default(0).notNull(),
+    chapterId: text("chapterId")
+      .unique()
+      .references(() => chapter.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => {
+    return {
+      assetIndex: index("muxData_videoId").on(table.videoId),
+    };
+  }
+);
+
+// MuxData relation
+export const bunnyData_relation = relations(bunnyData, ({ one }) => ({
+  chapter: one(chapter, {
+    fields: [bunnyData.chapterId],
     references: [chapter.id],
   }),
 }));
@@ -430,6 +469,7 @@ export type SessionType = typeof session.$inferSelect;
 export type CourseType = typeof course.$inferSelect;
 export type ChapterType = typeof chapter.$inferSelect;
 export type AttachmentType = typeof attachment.$inferSelect;
+export type BunnyDataType = typeof bunnyData.$inferSelect;
 export type MuxDataType = typeof muxData.$inferSelect;
 export type CategoryType = typeof category.$inferSelect;
 export type UserProgressType = typeof userProgress.$inferSelect;

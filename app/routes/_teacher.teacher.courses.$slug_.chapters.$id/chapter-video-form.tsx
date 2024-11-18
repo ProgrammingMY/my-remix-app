@@ -1,18 +1,17 @@
 import * as z from 'zod';
 import { Button } from '~/components/ui/button';
-import MuxPlayer from '@mux/mux-player-react'
 
-import React, { useEffect, useState } from 'react'
-import { Loader2, Pencil, PlusCircle, Video } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
+import { useEffect, useState } from 'react'
+import { Loader2, PlusCircle, Video } from 'lucide-react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
-import MuxUploader from '@mux/mux-uploader-react';
 import { useFetcher } from '@remix-run/react';
-import { ChapterType, MuxDataType } from '~/db/schema.server';
+import { BunnyDataType, ChapterType } from '~/db/schema.server';
+import BunnyUploader from './chapter-video-uploader';
+import BunnyPlayer from '~/components/bunny-player';
+import { isVideoReady } from '~/lib/utils';
 
 interface ChapterVideoProps {
-    chapter: ChapterType;
-    initialData: MuxDataType | undefined;
+    chapter: ChapterType & { bunnyData: BunnyDataType | null };
     courseSlug: string;
     chapterId: string;
 }
@@ -24,11 +23,12 @@ type MuxUploaderProps = {
 
 
 const formSchema = z.object({
-    uploadId: z.string().min(1),
+    videoId: z.string().min(1),
+    libraryId: z.number(),
 });
 
 
-export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }: ChapterVideoProps) => {
+export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVideoProps) => {
     const [isEditting, setIsEditting] = useState(false);
     const [uploadData, setUploadData] = useState<MuxUploaderProps>(null);
     const fetcher = useFetcher();
@@ -36,21 +36,6 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
     const toggleEditting = () => {
         setIsEditting((prev) => !prev);
     }
-
-    const isLoading = fetcher.state === "loading";
-
-    useEffect(() => {
-        if (fetcher.state === "idle" && !fetcher.data && isEditting) {
-            fetcher.load(`/api/muxurl`);
-        }
-        if (fetcher.data) {
-            setUploadData(fetcher.data as { id: string, url: string });
-        }
-
-        return () => {
-            setUploadData(null);
-        }
-    }, [fetcher, isEditting]);
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
@@ -84,30 +69,35 @@ export const ChapterVideoForm = ({ chapter, initialData, courseSlug, chapterId }
                 </Button>
             </div>
             {!isEditting && (
-                !chapter.uploadId ? (
+                !chapter.videoId ? (
                     <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
                         <Video className='h-10 w-10 text-slate-500' />
                     </div>
                 ) : (
                     <div className='relative aspect-video mt-2'>
-                        {initialData && (
-                            <MuxPlayer
-                                playbackId={initialData.playbackId || ""}
+                        {chapter.bunnyData && isVideoReady(chapter.bunnyData.status) && (
+                            <BunnyPlayer
+                                guid={chapter.bunnyData.videoId}
+                                libraryId={chapter.bunnyData.libraryId}
                             />
+                        )}
+                        {chapter.bunnyData && !isVideoReady(chapter.bunnyData.status) && (
+                            <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
+                                <Loader2 className='h-10 w-10 animate-spin' />
+                                Transcoding video... You can leave the page and come back later.
+                            </div>
                         )}
                     </div>
                 )
             )}
-            {isEditting && uploadData && (
-                <MuxUploader endpoint={uploadData.url} onSuccess={() => onSubmit({ uploadId: uploadData.id })} />
+            {isEditting && (
+                <BunnyUploader onUploadCompleted={(videoId: string, libraryId: number) => {
+                    if (videoId) {
+                        onSubmit({ videoId, libraryId });
+                    }
+                }} />
             )}
-            {isEditting && !uploadData && (
-                <div className='flex items-center justify-center h-60 bg-slate-200 rounded-md'>
-                    <Loader2 className='h-10 w-10 animate-spin' />
-                    Please wait...
-                </div>
-            )}
-            {chapter.uploadId && !isEditting && (
+            {chapter.videoId && !isEditting && (
                 <div className='text-xs text-muted-foreground mt-2'>
                     Videos can take a few minutes to process. Refresh the page if video does not appear.
                 </div>

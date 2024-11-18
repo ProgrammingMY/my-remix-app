@@ -15,6 +15,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { and, eq } from 'drizzle-orm';
 import { ChapterType, MuxDataType } from '~/db/schema.server';
 import { isAuthenticated } from '~/utils/auth.server';
+import { deleteVideo } from '~/utils/bunny.server';
 
 
 export const action = async ({ context, params, request }: ActionFunctionArgs) => {
@@ -56,7 +57,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                 throw jsonWithError("Error", "Course not found");
             }
 
-            if (chapter.uploadId) {
+            if (chapter.videoId) {
                 const mux = new Mux({
                     tokenId: env.MUX_TOKEN_ID,
                     tokenSecret: env.MUX_TOKEN_SECRET,
@@ -102,7 +103,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
         }
 
         // PATCH METHOD
-        const values = await request.json() as ChapterType;
+        const { libraryId, ...values } = await request.json() as ChapterType & { libraryId: number };
 
         const chapter = await db.update(schema.chapter)
             .set({
@@ -115,53 +116,41 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
 
 
         // if user upload video
-        if (values.uploadId) {
-            const mux = new Mux({
-                tokenId: env.MUX_TOKEN_ID,
-                tokenSecret: env.MUX_TOKEN_SECRET,
-            });
-
-            if (!mux) {
-                throw new Error("Mux is not configured");
-            }
-
-            // check if mux video already exists
-            const existingVideo = await db.query.muxData.findFirst({
+        if (values.videoId) {
+            // check if bunny video already exists
+            const existingVideo = await db.query.bunnyData.findFirst({
                 where: eq(schema.muxData.chapterId, params.id!),
             })
 
-            // delete video from mux if it exists
+            // delete video from bunny if it exists
             if (existingVideo) {
                 try {
-                    const videoInMux = await mux.video.assets.retrieve(existingVideo.assetId);
-
-                    if (videoInMux) {
-                        await mux.video.assets.delete(existingVideo.assetId);
-                    }
-                } finally {
+                    await deleteVideo(existingVideo.videoId, existingVideo.libraryId, env);
+                } catch (error) {
+                    console.log(error);
+                }
+                finally {
                     await db
-                        .delete(schema.muxData)
+                        .delete(schema.bunnyData)
                         .where(and(
-                            eq(schema.muxData.chapterId, params.id!),
+                            eq(schema.bunnyData.chapterId, params.id!),
                         ));
                 }
             }
 
-            const newMuxVideo = await mux.video.uploads.retrieve(values.uploadId);
+            // insert new bunnyData
+            await db.
+                insert(schema.bunnyData)
+                .values({
+                    libraryId,
+                    videoId: values.videoId,
+                    chapterId: params.id!,
+                })
+                .onConflictDoUpdate({
+                    target: schema.bunnyData.videoId,
+                    set: { chapterId: params.id! },
+                })
 
-            if (newMuxVideo.asset_id) {
-                // check if muxData already exist
-                await db.
-                    insert(schema.muxData)
-                    .values({
-                        assetId: newMuxVideo.asset_id,
-                        chapterId: params.id!,
-                    })
-                    .onConflictDoUpdate({
-                        target: schema.muxData.assetId,
-                        set: { chapterId: params.id! },
-                    })
-            }
         }
 
         return jsonWithSuccess("Success", "Chapter updated successfully");
@@ -204,21 +193,18 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
             eq(schema.chapter.id, params.id!),
             eq(schema.chapter.courseId, courseOwner.id)
         ),
+        with: {
+            bunnyData: true
+        }
     })
 
     if (!chapter) {
         throw redirect(`/teacher/courses/${params.slug}/chapters`);
     }
 
-    const muxData = await db.query.muxData.findFirst({
-        where: and(
-            eq(schema.muxData.chapterId, chapter.id),
-        ),
-    })
-
     const requiredField = [
         chapter.title,
-        chapter.uploadId,
+        chapter.videoId,
     ];
 
     const totalField = requiredField.length;
@@ -230,14 +216,13 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
     return {
         chapter,
-        muxData,
         isCompleted,
         completionText,
     }
 }
 
 const ChapterIdPage = () => {
-    const { chapter, muxData, isCompleted, completionText } = useLoaderData<typeof loader>();
+    const { chapter, isCompleted, completionText } = useLoaderData<typeof loader>();
     const { slug, id } = useParams();
 
     return (
@@ -313,7 +298,6 @@ const ChapterIdPage = () => {
                         </div>
                         <ChapterVideoForm
                             chapter={chapter}
-                            initialData={muxData}
                             courseSlug={slug!}
                             chapterId={id!}
                         />

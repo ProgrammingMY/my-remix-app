@@ -81,13 +81,17 @@ export const action = async ({
           eq(schema.chapter.courseId, courseOwner.id),
           eq(schema.chapter.id, params.id!)
         ),
+        with: {
+          bunnyData: true,
+        },
       });
 
-      const muxData = await db.query.muxData.findFirst({
-        where: eq(schema.muxData.chapterId, params.id!),
-      });
-
-      if (!chapter || !muxData || !chapter.title || !chapter.uploadId) {
+      if (
+        !chapter ||
+        !chapter.bunnyData ||
+        !chapter.title ||
+        !chapter.videoId
+      ) {
         return jsonWithError("Error", "Missing required fields");
       }
 
