@@ -3,13 +3,14 @@ import { Outlet, useLoaderData } from "@remix-run/react"
 import Navbar from "~/components/navbar/navbar";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarProvider } from "~/components/ui/sidebar";
-import { ClientUserType, SafeUserType } from "~/lib/types";
+import { isTeacher } from "~/lib/isTeacher";
+import { SafeUserType } from "~/lib/types";
 import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
 
-    const { user, headers } = await isAuthenticated(request, env);
+    const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
     if (!user) {
         return redirect("/login", {
@@ -17,7 +18,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
         });
     }
 
-    if (user.role?.name !== "teacher") {
+    if (!isTeacher(user)) {
         return redirect("/user", {
             headers
         });

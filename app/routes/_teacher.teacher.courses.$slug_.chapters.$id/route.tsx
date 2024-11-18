@@ -15,18 +15,26 @@ import { and, eq } from 'drizzle-orm';
 import { ChapterType } from '~/db/schema.server';
 import { isAuthenticated } from '~/utils/auth.server';
 import { deleteVideo } from '~/utils/bunny.server';
+import { SafeUserType } from '~/lib/types';
+import { isTeacher } from '~/lib/isTeacher';
 
 
 export const action = async ({ context, params, request }: ActionFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
 
-        const { user, headers } = await isAuthenticated(request, env);
+        const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
         if (!user) {
             return redirect("/login", {
                 headers,
             });
+        };
+
+        if (!isTeacher(user)) {
+            return redirect("/user", {
+                headers,
+            })
         }
 
         const db = drizzle(env.DB_drizzle, { schema });

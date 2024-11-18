@@ -4,7 +4,6 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -15,12 +14,10 @@ import {
 } from "~/components/ui/sidebar"
 
 import { Link, useFetcher, useLocation } from "@remix-run/react";
-import { BadgeCheck, BarChart, Bell, Book, BookOpenTextIcon, ChevronsUpDown, CreditCard, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
-import { cn } from "~/lib/utils";
+import { BadgeCheck, BarChart, BookOpenTextIcon, ChevronsUpDown, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { UserType } from "~/db/schema.server";
-import { ClientUserType, SafeUserType } from "~/lib/types";
+import { SafeUserType } from "~/lib/types";
 import { capitalizeFirstLetter } from "~/lib/format";
 import { isTeacher } from "~/lib/isTeacher";
 

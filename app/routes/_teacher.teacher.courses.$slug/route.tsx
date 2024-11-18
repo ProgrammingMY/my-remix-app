@@ -15,6 +15,8 @@ import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { isAuthenticated } from "~/utils/auth.server";
 import { deleteVideo } from "~/utils/bunny.server";
+import { isTeacher } from "~/lib/isTeacher";
+import { SafeUserType } from "~/lib/types";
 
 
 export const action = async ({
@@ -25,10 +27,16 @@ export const action = async ({
     try {
         const { env } = context.cloudflare;
 
-        const { user, headers } = await isAuthenticated(request, env);
+        const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
         if (!user) {
             return redirect("/login", {
+                headers,
+            });
+        }
+
+        if (!isTeacher(user)) {
+            return redirect("/user", {
                 headers,
             });
         }

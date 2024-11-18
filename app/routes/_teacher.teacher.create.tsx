@@ -8,6 +8,8 @@ import { Label } from '~/components/ui/label'
 import * as schema from "~/db/schema.server";
 import { Loader2 } from "lucide-react";
 import { isAuthenticated } from "~/utils/auth.server";
+import { SafeUserType } from "~/lib/types";
+import { isTeacher } from "~/lib/isTeacher";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
@@ -15,12 +17,18 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
         const { env } = context.cloudflare;
 
-        const { user, headers } = await isAuthenticated(request, env);
+        const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
         if (!user) {
             return redirect("/login", {
-                headers
+                headers,
             });
+        };
+
+        if (!isTeacher(user)) {
+            return redirect("/user", {
+                headers,
+            })
         }
 
         const newTitle = formData.get("title") as string;
