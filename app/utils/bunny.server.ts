@@ -10,6 +10,15 @@ export const generateUploadSignature = (
   return crypto.createHash("sha256").update(signatureInput).digest("hex");
 };
 
+export const generateVideoSignature = (
+  tokenSecurityKey: string,
+  videoId: string,
+  expirationTime: number
+): string => {
+  const signatureInput = `${tokenSecurityKey}${videoId}${expirationTime}`;
+  return crypto.createHash("sha256").update(signatureInput).digest("hex");
+};
+
 export const deleteVideo = async (
   videoId: string,
   libraryId: number,

@@ -69,6 +69,7 @@ export const ChapterVideoForm = ({ chapter, courseSlug, chapterId }: ChapterVide
                     <div className='relative aspect-video mt-2'>
                         {chapter.bunnyData && isVideoReady(chapter.bunnyData.status) && (
                             <BunnyPlayer
+                                title={chapter.title}
                                 guid={chapter.bunnyData.videoId}
                                 libraryId={chapter.bunnyData.libraryId}
                             />

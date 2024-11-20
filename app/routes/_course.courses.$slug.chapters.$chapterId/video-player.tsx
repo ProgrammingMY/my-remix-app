@@ -30,32 +30,6 @@ export const VideoPlayer = ({
     const navigate = useNavigate();
     const fetcher = useFetcher();
 
-    const onEnded = async () => {
-        try {
-            if (completeOnEnd) {
-                fetcher.submit({
-                    isCompleted: true,
-                },
-                    {
-                        method: "PUT",
-                        encType: "application/json",
-                    })
-            }
-
-            // if (!nextChapterId) {
-            //     confetti.onOpen();
-            // }
-            jsonWithSuccess({ result: "Success" }, { message: "Progress updated" })
-            if (nextChapterId) {
-                navigate(`/courses/${courseSlug}/chapters/${nextChapterId}`);
-            }
-
-        }
-        catch (error) {
-            jsonWithError({ result: "Error" }, { message: "Something went wrong" })
-        }
-    }
-
     return (
         <div className="relative aspect-video">
             {!isReady && !isLocked && (
@@ -71,6 +45,7 @@ export const VideoPlayer = ({
             )}
             {!isLocked && videoId && libraryId && (
                 <BunnyPlayer
+                    title={title}
                     guid={videoId}
                     libraryId={libraryId}
                 />

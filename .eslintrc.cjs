@@ -22,18 +22,12 @@ module.exports = {
   ignorePatterns: ["!**/.server", "!**/.client"],
 
   // Base config
-  extends: ["eslint:recommended"],
 
   overrides: [
     // React
     {
       files: ["**/*.{js,jsx,ts,tsx}"],
       plugins: ["react", "jsx-a11y"],
-      extends: [
-        "plugin:react/recommended",
-        "plugin:react/jsx-runtime",
-        "plugin:jsx-a11y/recommended",
-      ],
       settings: {
         react: {
           version: "detect",
@@ -65,11 +59,6 @@ module.exports = {
           },
         },
       },
-      extends: [
-        "plugin:@typescript-eslint/recommended",
-        "plugin:import/recommended",
-        "plugin:import/typescript",
-      ],
     },
 
     // Node
