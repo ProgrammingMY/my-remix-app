@@ -119,8 +119,7 @@ export const connection = sqliteTable(
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    providerName: text("providerName").notNull(),
-    providerId: text("providerId").notNull(),
+    providerId: text("providerId").notNull().unique(),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -133,10 +132,7 @@ export const connection = sqliteTable(
   },
   (table) => {
     return {
-      connectionUnique: unique("provider_name_id").on(
-        table.providerName,
-        table.providerId
-      ),
+      indexProviderId: index("provider_id").on(table.providerId),
     };
   }
 );

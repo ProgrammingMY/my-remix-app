@@ -1,6 +1,6 @@
 // app/routes/login.tsx
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Form, Link, redirect, useActionData } from "@remix-run/react";
+import { Form, Link, redirect, useActionData, useNavigate } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -11,6 +11,7 @@ import { isAuthenticated, login } from "~/utils/auth.server";
 export default function Screen() {
     const data = useActionData<typeof action>();
     const { error } = data ?? {};
+    const navigate = useNavigate();
     return (
         <>
             <Link
@@ -67,8 +68,13 @@ export default function Screen() {
                     <Button type="submit" className="w-full">
                         Login
                     </Button>
-                    <Button variant="outline" className="w-full">
-                        Login with Google
+                    <Button
+                        className="w-full"
+                        type="button"
+                        variant={"outline"}
+                        onClick={() => navigate("/api/login/google")}
+                    >
+                        Continue with Google
                     </Button>
                 </div>
             </Form>

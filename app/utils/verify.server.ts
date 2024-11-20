@@ -2,12 +2,7 @@ import { DrizzleD1Database } from "drizzle-orm/d1";
 import { generateRandomOTP } from "./utils.server";
 
 import * as schema from "~/db/schema.server";
-import {
-  createSession,
-  generateSessionToken,
-  sessionStorage,
-  verificationStorage,
-} from "./session.server";
+import { verificationStorage } from "./session.server";
 import { and, eq } from "drizzle-orm";
 
 type VerificationType = "onboarding" | "reset-password" | "2fa";
@@ -228,23 +223,18 @@ export async function createEmailVerificationRequest({
 }
 
 export async function verifyTotp({
-  request,
+  code,
   verificationId,
-  headers,
   userId,
   db,
 }: {
-  request: Request;
+  code?: string;
   verificationId: string;
-  headers: Headers;
   userId: string;
   db: DrizzleD1Database<typeof schema> & {
     $client: D1Database;
   };
 }) {
-  // verify the code
-  const code = (await request.formData()).get("code");
-
   if (!code || typeof code !== "string" || code.length !== 6) {
     const error = {
       message: "Invalid code format",
@@ -291,27 +281,8 @@ export async function verifyTotp({
     };
     return {
       error,
-      headers,
     };
   }
-
-  // set email verified
-  await db
-    .update(schema.user)
-    .set({
-      emailVerified: true,
-    })
-    .where(eq(schema.user.id, userId));
-
-  // remove the verification request
-  await deleteEmailVerificationCookie(request, headers, db);
-
-  // commit the session to the user's browser
-  const token = generateSessionToken();
-  await createSession(token, userId, db);
-  const session = await sessionStorage.getSession();
-  session.set("token", token);
-  headers.append("Set-Cookie", await sessionStorage.commitSession(session));
 
   return {
     error: null,

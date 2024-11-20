@@ -11,11 +11,11 @@ import {
 } from "~/components/ui/input-otp";
 import { Label } from "~/components/ui/label";
 import * as schema from "~/db/schema.server";
-import { isAuthenticated } from "~/utils/auth.server";
 import { deleteEmailVerificationCookie, verifyEmailVerificationCookie, verifyTotp } from "~/utils/verify.server";
 import { getFormProps, getInputProps, useForm } from '@conform-to/react'
 import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import * as z from 'zod'
+import { startUserSession, verifyUserEmail } from "~/utils/user.server";
 
 const VerifySchema = z.object({
     code: z.string().length(6),
@@ -37,14 +37,14 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         });
     }
 
+    const code = (await request.formData()).get("code") as string;
     // verify totp
     const { error } = await verifyTotp({
-        request,
+        code,
         verificationId: emailVerificationRequest.id,
-        headers,
         userId: emailVerificationRequest.userId,
-        db,
-    });
+        db
+    })
 
     if (error) {
         return {
@@ -52,10 +52,19 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         }
     }
 
-    // set user to verified
-    await db.update(schema.user).set({
-        emailVerified: true,
-    }).where(eq(schema.user.id, emailVerificationRequest.userId));
+    const user = await verifyUserEmail({ userId: emailVerificationRequest.userId, db });
+
+    if (!user) {
+        return {
+            message: "Something went wrong",
+        }
+    }
+
+    // delete the verification cookie
+    await deleteEmailVerificationCookie(request, headers, db);
+
+    // start user session
+    await startUserSession({ userId: emailVerificationRequest.userId, db, headers });
 
     // return to dashboard
     return redirect("/user", {

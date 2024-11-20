@@ -1,5 +1,5 @@
 import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Form, Link, redirect, useActionData } from "@remix-run/react";
+import { Form, Link, redirect, useActionData, useNavigate } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -40,6 +40,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 // names we are going to use in the strategy
 export default function Screen() {
     const actionData = useActionData<typeof action>();
+    const navigate = useNavigate();
 
     return (
         <div className="flex flex-col justify-center py-8">
@@ -119,6 +120,7 @@ export default function Screen() {
                         className="w-full"
                         type="button"
                         variant={"outline"}
+                        onClick={() => navigate("/api/login/google")}
                     >
                         Continue with Google
                     </Button>

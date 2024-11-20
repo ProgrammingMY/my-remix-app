@@ -15,10 +15,12 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "@remix-run/cloudflare";
 import {
+  deleteEmailVerificationCookie,
   prepareEmailVerification,
   sendVerificationEmail,
   setEmailVerificationCookie,
 } from "./verify.server";
+import { removeGoogleSession } from "./google.server";
 
 export const sessionToken = "token";
 
@@ -164,9 +166,10 @@ export async function signup(request: Request, env: Env) {
     where: eq(schema.user.email, email.toLowerCase()),
   });
 
-  if (existingUser) {
-    const error = new Error();
-    error.message = "Email already exists";
+  if (existingUser && existingUser.emailVerified) {
+    const error = {
+      message: "Email already exists",
+    };
     return {
       error,
       headers,
@@ -212,6 +215,7 @@ export async function logout(
     redirectTo?: string;
   }
 ) {
+  const headers = new Headers();
   const cookieSession = await getSession(request.headers.get("Cookie"));
   const token = cookieSession.get(sessionToken);
   const { session } = await validateSessionToken(token, env);
@@ -220,10 +224,18 @@ export async function logout(
   if (session) {
     await invalidateSession(session.id, env);
   }
+
+  // remove google cookie if any
+  await removeGoogleSession(request, headers);
+
+  // destroy the session
+  headers.append(
+    "Set-Cookie",
+    await sessionStorage.destroySession(cookieSession)
+  );
+
   throw redirect(redirectTo, {
-    headers: {
-      "Set-Cookie": await sessionStorage.destroySession(cookieSession),
-    },
+    headers,
   });
 }
 
@@ -236,6 +248,9 @@ export async function startTOTPProcess(
     $client: D1Database;
   }
 ) {
+  // delete existing email verification session
+  await deleteEmailVerificationCookie(request, headers, db);
+
   // create a verification request
   const verificationRequest = await prepareEmailVerification({
     request,
