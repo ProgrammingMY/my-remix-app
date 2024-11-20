@@ -1,14 +1,19 @@
 import { ActionFunctionArgs } from "@remix-run/cloudflare";
 import { handleRequest, route, UploadFileError } from "better-upload/server";
 import { r2 } from "better-upload/server/helpers";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
+import { isAuthenticated } from "~/utils/auth.server";
 
-const authenticateUser = async ({ request, env }: { request: Request, env: Env }) => {
-  const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-  const { data: { user } } = await supabaseClient.auth.getUser();
+const authenticateUser = async ({
+  request,
+  env,
+}: {
+  request: Request;
+  env: Env;
+}) => {
+  const { user } = await isAuthenticated(request, env);
 
   return user;
-}
+};
 
 export async function action({ request, context }: ActionFunctionArgs) {
   const { env } = context.cloudflare;
@@ -29,22 +34,31 @@ export async function action({ request, context }: ActionFunctionArgs) {
         onBeforeUpload: async () => {
           const user = await authenticateUser({ request, env });
           if (!user) {
-            throw new UploadFileError("Not authenticated")
+            throw new UploadFileError("Not authenticated");
           }
-        }
+        },
       }),
       attachment: route({
-        fileTypes: ["image/*", "application/pdf", "application/json", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.openxmlformats.officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/x-zip-compressed", "application/zip"],
+        fileTypes: [
+          "image/*",
+          "application/pdf",
+          "application/json",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "application/vnd.openxmlformats.officedocument.wordprocessingml.document",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/x-zip-compressed",
+          "application/zip",
+        ],
         multipleFiles: true,
         maxFileSize: 1024 * 1024 * 10,
         maxFiles: 5,
         onBeforeUpload: async () => {
           const user = await authenticateUser({ request, env });
           if (!user) {
-            throw new UploadFileError("Not authenticated")
+            throw new UploadFileError("Not authenticated");
           }
-        }
-      })
+        },
+      }),
     },
   });
 }

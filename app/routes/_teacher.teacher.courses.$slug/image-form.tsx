@@ -30,7 +30,6 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
         try {
             fetcher.submit(values, {
                 method: "PATCH",
-                encType: "application/json",
             })
             jsonWithSuccess(
                 { result: "Success" },

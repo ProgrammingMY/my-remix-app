@@ -2,7 +2,6 @@ import { IconBadge } from "~/components/icon-badge";
 import TitleForm from "./title-form";
 import { CircleDollarSign, File, LayoutDashboard, ListCheck } from "lucide-react";
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { useLoaderData } from "@remix-run/react";
 import { DescriptionForm } from "./description-form";
 import { PriceForm } from "./price-form";
@@ -10,11 +9,14 @@ import { ImageForm } from "./image-form";
 import { AttachmentForm } from "./attachment-form";
 import { ChaptersForm } from "./chapters-form";
 import { jsonWithError, jsonWithSuccess, redirectWithSuccess } from "remix-toast";
-import Mux from "@mux/mux-node";
 import Action from "./action";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { isAuthenticated } from "~/utils/auth.server";
+import { deleteVideo } from "~/utils/bunny.server";
+import { isTeacher } from "~/lib/isTeacher";
+import { SafeUserType } from "~/lib/types";
 
 
 export const action = async ({
@@ -25,17 +27,16 @@ export const action = async ({
     try {
         const { env } = context.cloudflare;
 
-        const { supabaseClient, headers } = createSupabaseServerClient(
-            request,
-            env
-        );
-
-        const {
-            data: { user },
-        } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
         if (!user) {
             return redirect("/login", {
+                headers,
+            });
+        }
+
+        if (!isTeacher(user)) {
+            return redirect("/user", {
                 headers,
             });
         }
@@ -58,23 +59,14 @@ export const action = async ({
                 return jsonWithError("Error", "Course not found");
             }
 
-            const mux = new Mux({
-                tokenId: env.MUX_TOKEN_ID,
-                tokenSecret: env.MUX_TOKEN_SECRET,
-            });
-
-            if (!mux) {
-                throw new Error("Mux is not configured");
-            }
-
             for (const chapter of course.chapters) {
-                const muxData = await db.query.muxData.findFirst({
+                const bunnyData = await db.query.bunnyData.findFirst({
                     where: and(
-                        eq(schema.muxData.chapterId, chapter.id),
+                        eq(schema.bunnyData.chapterId, chapter.id),
                     )
                 })
-                if (muxData?.assetId) {
-                    await mux.video.assets.delete(muxData.assetId);
+                if (bunnyData) {
+                    await deleteVideo(bunnyData.videoId, bunnyData.libraryId, env);
                 }
             }
 
@@ -118,9 +110,7 @@ export const action = async ({
 
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         return redirect("/login", {

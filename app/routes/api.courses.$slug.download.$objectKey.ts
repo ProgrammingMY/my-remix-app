@@ -1,10 +1,10 @@
 import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import * as schema from "~/db/schema.server";
 import { and, eq } from "drizzle-orm";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({
   request,
@@ -19,11 +19,7 @@ export const loader = async ({
     }
 
     // make sure user is authenticated and purchased the course
-    const { supabaseClient } = createSupabaseServerClient(request, env);
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
       throw redirect("/login");

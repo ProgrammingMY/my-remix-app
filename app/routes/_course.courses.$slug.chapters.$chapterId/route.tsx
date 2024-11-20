@@ -2,7 +2,6 @@ import { Banner } from "~/components/banner";
 import { Separator } from "~/components/ui/separator";
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { getChapter } from "~/utils/getChapter.server";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { useLoaderData, useNavigate, useParams } from "@remix-run/react";
 import { VideoPlayer } from "./video-player";
 import { drizzle } from "drizzle-orm/d1";
@@ -10,16 +9,15 @@ import * as schema from "~/db/schema.server";
 import { Button } from "~/components/ui/button";
 import { formatPrice } from "~/lib/format";
 import { CourseProgressButton } from "./course-progress-button";
-import { and, eq } from "drizzle-orm";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
 import { CourseAttachments } from "./course-attachments";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const action = async ({ request, context, params }: ActionFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
-        const { supabaseClient } = createSupabaseServerClient(request, env);
 
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { user, headers } = await isAuthenticated(request, env);
 
         if (!user) {
             throw redirect("/login");
@@ -55,9 +53,8 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
 
 export const loader = async ({ params, context, request }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
-    const { supabaseClient, headers } = createSupabaseServerClient(request, env);
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { user, headers } = await isAuthenticated(request, env);
 
     if (!user) {
         return redirect("/login", {
@@ -70,7 +67,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
     const {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -94,7 +91,7 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
     return {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -108,7 +105,7 @@ const ChapterIdPage = () => {
     const {
         chapter,
         course,
-        muxData,
+        bunnyData,
         attachments,
         nextChapter,
         userProgress,
@@ -144,7 +141,8 @@ const ChapterIdPage = () => {
                         title={chapter.title}
                         courseSlug={params.slug!}
                         nextChapterId={nextChapter?.id}
-                        playbackId={muxData?.playbackId!}
+                        videoId={bunnyData?.videoId}
+                        libraryId={bunnyData?.libraryId}
                         isLocked={isLocked}
                         completeOnEnd={completeOnEnd}
                     />

@@ -1,9 +1,11 @@
 import { ActionFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "~/db/schema.server";
 import { and, eq } from "drizzle-orm";
+import { isAuthenticated } from "~/utils/auth.server";
+import { SafeUserType } from "~/lib/types";
+import { isTeacher } from "~/lib/isTeacher";
 
 export const action = async ({
   request,
@@ -13,17 +15,19 @@ export const action = async ({
   try {
     const { env } = context.cloudflare;
 
-    const { supabaseClient, headers } = createSupabaseServerClient(
-      request,
-      env
-    );
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const { user, headers } = (await isAuthenticated(request, env)) as {
+      user: SafeUserType;
+      headers: Headers;
+    };
 
     if (!user) {
       return redirect("/login", {
+        headers,
+      });
+    }
+
+    if (!isTeacher(user)) {
+      return redirect("/user", {
         headers,
       });
     }
@@ -88,13 +92,17 @@ export const action = async ({
           eq(schema.chapter.courseId, courseOwner.id),
           eq(schema.chapter.id, params.id!)
         ),
+        with: {
+          bunnyData: true,
+        },
       });
 
-      const muxData = await db.query.muxData.findFirst({
-        where: eq(schema.muxData.chapterId, params.id!),
-      });
-
-      if (!chapter || !muxData || !chapter.title || !chapter.uploadId) {
+      if (
+        !chapter ||
+        !chapter.bunnyData ||
+        !chapter.title ||
+        !chapter.videoId
+      ) {
         return jsonWithError("Error", "Missing required fields");
       }
 

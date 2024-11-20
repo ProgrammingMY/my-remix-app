@@ -9,3 +9,14 @@ export interface ChapterFormProps {
   courseSlug: string;
   chapterId: string;
 }
+
+export interface SafeUserType {
+  email: string;
+  name: string;
+  imageUrl: string | null;
+  id: string;
+  emailVerified: boolean;
+  role: {
+    name: string;
+  };
+}

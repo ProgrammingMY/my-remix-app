@@ -1,6 +1,7 @@
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
@@ -14,7 +15,7 @@ import {
     useSidebar,
 } from "~/components/ui/sidebar"
 import { CourseSidebarItem } from "./course-sidebar-item";
-import { CheckCircle, PlayCircle, Lock } from "lucide-react";
+import { CheckCircle, PlayCircle, Lock, LogOutIcon } from "lucide-react";
 import { Link, useLocation } from "@remix-run/react";
 import { ChapterType, CourseType, PurchaseType, UserProgressType } from "~/db/schema.server";
 
@@ -37,26 +38,30 @@ const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
                     <SidebarSeparator />
                     <SidebarMenu>
                         {course.chapters.map((chapter) => (
-                            <SidebarMenuItem key={chapter.id}>
-                                <SidebarMenuButton asChild isActive={pathname?.includes(chapter.id)}>
-                                    <Link to={`/courses/${course.slug}/chapters/${chapter.id}`}>
-                                        <PlayCircle />
-                                        <span>{chapter.title}</span>
-                                    </Link>
-                                    {/* <CourseSidebarItem
-                                            key={chapter.id}
-                                            id={chapter.id}
-                                            label={chapter.title}
-                                            isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
-                                            courseSlug={course.slug}
-                                            isLocked={!chapter.isFree && !purchase}
-                                        /> */}
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
+                            <CourseSidebarItem
+                                key={chapter.id}
+                                id={chapter.id}
+                                label={chapter.title}
+                                isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
+                                courseSlug={course.slug}
+                                isLocked={!chapter.isFree && !purchase}
+                            />
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
+            <SidebarFooter>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <Link to={"/user"}>
+                            <SidebarMenuButton>
+                                <LogOutIcon />
+                                Exit Course
+                            </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     )
 }

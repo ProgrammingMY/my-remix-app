@@ -1,22 +1,18 @@
-import { json, LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
+import { LoaderFunctionArgs, redirect } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import { createSupabaseServerClient } from "~/utils/supabase.server";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import { drizzle } from "drizzle-orm/d1";
-import { course, CourseType } from "~/db/schema.server";
+import { course } from "~/db/schema.server";
 import { desc, eq } from "drizzle-orm";
+import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({
   context,
   request,
 }: LoaderFunctionArgs) => {
   const { env } = context.cloudflare;
-  const { supabaseClient } = createSupabaseServerClient(request, env);
-
-  const {
-    data: { user },
-  } = await supabaseClient.auth.getUser();
+  const { user, headers } = await isAuthenticated(request, env);
 
   if (!user) {
     return redirect("/login");

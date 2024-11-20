@@ -1,8 +1,8 @@
 import { cn } from '~/lib/utils';
 import { useUploadFiles } from 'better-upload/client';
 import { Loader2, UploadIcon } from 'lucide-react';
-import { useCallback, useEffect, useId, useState } from 'react';
-import Dropzone, { FileRejection, useDropzone } from 'react-dropzone-esm';
+import { useCallback, useEffect, useState } from 'react';
+import Dropzone, { FileRejection } from 'react-dropzone-esm';
 import { jsonWithError } from 'remix-toast';
 import FileCard, { isFileWithPreview } from './file-card';
 import { Button } from './button';

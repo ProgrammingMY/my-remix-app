@@ -3,16 +3,23 @@ import { Outlet, useLoaderData } from "@remix-run/react"
 import Navbar from "~/components/navbar/navbar";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarProvider } from "~/components/ui/sidebar";
+import { isTeacher } from "~/lib/isTeacher";
 import { SafeUserType } from "~/lib/types";
 import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const { env } = context.cloudflare;
 
-    const { user, headers } = await isAuthenticated(request, env);
+    const { user, headers } = await isAuthenticated(request, env) as { user: SafeUserType, headers: Headers };
 
     if (!user) {
         return redirect("/login", {
+            headers
+        });
+    }
+
+    if (!isTeacher(user)) {
+        return redirect("/user", {
             headers
         });
     }
@@ -22,7 +29,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     };
 }
 
-export default function Dashboard() {
+export default function TeacherLayout() {
     const { user } = useLoaderData<typeof loader>() as { user: SafeUserType };
 
     return (

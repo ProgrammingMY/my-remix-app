@@ -1,9 +1,4 @@
-import {
-  relations,
-  sql,
-  type InferInsertModel,
-  type InferSelectModel,
-} from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   text,
   sqliteTable,
@@ -11,18 +6,25 @@ import {
   real,
   unique,
   index,
-  check,
   primaryKey,
+  blob,
 } from "drizzle-orm/sqlite-core";
+import { uuidv7 } from "uuidv7";
 
 // User table
 export const user = sqliteTable("user", {
   id: text("id")
     .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+    .$defaultFn(() => uuidv7()),
   email: text("email").notNull().unique(),
   name: text("name"),
-  role: text("role").$type<"teacher" | "user">(),
+  imageUrl: text("imageUrl"),
+  roleId: integer("roleId").references(() => role.id),
+  hashedPassword: text("hashedPassword"),
+  emailVerified: integer("emailVerified", { mode: "boolean" })
+    .default(false)
+    .notNull(),
+  totpKey: blob("totpKey"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
@@ -30,6 +32,121 @@ export const user = sqliteTable("user", {
     .notNull()
     .default(sql`(current_timestamp)`),
 });
+
+// User relation
+export const user_relation = relations(user, ({ one, many }) => ({
+  role: one(role, { fields: [user.roleId], references: [role.id] }),
+}));
+
+// Session table
+export const session = sqliteTable("session", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  twoFactorVerified: integer("two_factor_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});
+
+// Session relation
+export const session_relation = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+// Email verification table
+export const emailVerification = sqliteTable("email_verification", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  code: text("code").notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+});
+
+// Email verification relation
+export const emailVerification_relation = relations(
+  emailVerification,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [emailVerification.userId],
+      references: [user.id],
+    }),
+  })
+);
+
+// Password reset table
+export const passwordReset = sqliteTable("password_reset", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  code: text("code").notNull(),
+  emailVerified: integer("email_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  twoFactorVerified: integer("two_factor_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  expiresAt: integer("expires_at").notNull(),
+});
+
+// Password reset relation
+export const passwordReset_relation = relations(passwordReset, ({ one }) => ({
+  user: one(user, {
+    fields: [passwordReset.userId],
+    references: [user.id],
+  }),
+}));
+
+// Connection table
+export const connection = sqliteTable(
+  "connection",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    providerId: text("providerId").notNull().unique(),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => {
+    return {
+      indexProviderId: index("provider_id").on(table.providerId),
+    };
+  }
+);
+
+// Role table
+export const role = sqliteTable("role", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+});
+
+// Role relation
+export const role_relation = relations(role, ({ many }) => ({
+  users: many(user),
+}));
 
 // Course table
 export const course = sqliteTable(
@@ -97,7 +214,7 @@ export const chapter = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     title: text("title").notNull(),
     description: text("description"),
-    uploadId: text("uploadId"),
+    videoId: text("videoId"),
     position: integer("position").notNull(),
     isPublished: integer("isPublished", { mode: "boolean" })
       .default(false)
@@ -123,6 +240,10 @@ export const chapter = sqliteTable(
 // Chapter relation
 export const chapter_relation = relations(chapter, ({ one, many }) => ({
   course: one(course, { fields: [chapter.courseId], references: [course.id] }),
+  bunnyData: one(bunnyData, {
+    fields: [chapter.videoId],
+    references: [bunnyData.videoId],
+  }),
   userProgress: many(userProgress),
 }));
 
@@ -160,15 +281,16 @@ export const attachment_relation = relations(attachment, ({ one }) => ({
   }),
 }));
 
-// MuxData table
-export const muxData = sqliteTable(
-  "muxData",
+// BunnyData table
+export const bunnyData = sqliteTable(
+  "bunnyData",
   {
     id: text("id")
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    assetId: text("assetId").notNull().unique(),
-    playbackId: text("playbackId"),
+    videoId: text("videoId").notNull().unique(),
+    libraryId: integer("libraryId", { mode: "number" }).notNull(),
+    status: integer("status", { mode: "number" }).default(0).notNull(),
     chapterId: text("chapterId")
       .unique()
       .references(() => chapter.id, { onDelete: "cascade" }),
@@ -181,18 +303,10 @@ export const muxData = sqliteTable(
   },
   (table) => {
     return {
-      assetIndex: index("muxData_assetId").on(table.assetId),
+      assetIndex: index("bunnyData_videoId").on(table.videoId),
     };
   }
 );
-
-// MuxData relation
-export const muxData_relation = relations(muxData, ({ one }) => ({
-  chapter: one(chapter, {
-    fields: [muxData.chapterId],
-    references: [chapter.id],
-  }),
-}));
 
 // UserProgress table
 export const userProgress = sqliteTable(
@@ -275,7 +389,7 @@ export const toyyibCustomer = sqliteTable(
     userId: text("userId").notNull(),
     courseId: text("courseId")
       .notNull()
-      .references(() => course.id),
+      .references(() => course.id, { onDelete: "cascade" }),
     billCode: text("billCode").notNull(),
     transactionId: text("transactionId"),
     status: text("status").$type<"pending" | "success" | "failed">(),
@@ -304,10 +418,12 @@ export const toyyibCustomer_relation = relations(toyyibCustomer, ({ one }) => ({
   }),
 }));
 
+export type UserType = typeof user.$inferSelect;
+export type SessionType = typeof session.$inferSelect;
 export type CourseType = typeof course.$inferSelect;
 export type ChapterType = typeof chapter.$inferSelect;
 export type AttachmentType = typeof attachment.$inferSelect;
-export type MuxDataType = typeof muxData.$inferSelect;
+export type BunnyDataType = typeof bunnyData.$inferSelect;
 export type CategoryType = typeof category.$inferSelect;
 export type UserProgressType = typeof userProgress.$inferSelect;
 export type PurchaseType = typeof purchase.$inferSelect;
