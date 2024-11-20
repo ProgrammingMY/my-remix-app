@@ -13,7 +13,7 @@ import {
     useSidebar,
 } from "~/components/ui/sidebar"
 
-import { Link, useFetcher, useLocation } from "@remix-run/react";
+import { Link, redirect, useFetcher, useLocation, useNavigate } from "@remix-run/react";
 import { BadgeCheck, BarChart, BookOpenTextIcon, ChevronsUpDown, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -53,9 +53,10 @@ export function AppSidebar({
 }) {
     const { pathname } = useLocation();
     const { state } = useSidebar();
+    const navigate = useNavigate();
     const fetcher = useFetcher();
 
-    const isTeacherPage = pathname?.includes('/teacher') && user.role?.name === "teacher";
+    const isTeacherPage = pathname?.includes('/teacher') && isTeacher(user);
 
     const items = isTeacherPage ? teacherRoutes : guestRoutes;
 
@@ -171,7 +172,7 @@ export function AppSidebar({
 
                                 </DropdownMenuGroup>
                                 <DropdownMenuGroup>
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => navigate("/account")}>
                                         <BadgeCheck />
                                         Account
                                     </DropdownMenuItem>
