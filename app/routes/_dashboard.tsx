@@ -3,7 +3,7 @@ import { Outlet, useLoaderData } from "@remix-run/react"
 import Navbar from "~/components/navbar/navbar";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarProvider } from "~/components/ui/sidebar";
-import { ClientUserType, SafeUserType } from "~/lib/types";
+import { SafeUserType } from "~/lib/types";
 import { isAuthenticated } from "~/utils/auth.server";
 
 export const loader = async ({ request, context }: LoaderFunctionArgs) => {

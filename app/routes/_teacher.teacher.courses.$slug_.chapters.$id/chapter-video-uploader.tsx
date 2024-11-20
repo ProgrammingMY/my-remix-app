@@ -1,4 +1,4 @@
-import {  useFetcher } from "@remix-run/react";
+import { useFetcher } from "@remix-run/react";
 import { useCallback, useEffect, useState } from "react";
 import * as tus from 'tus-js-client';
 import Dropzone, { FileRejection } from "react-dropzone-esm";
@@ -69,7 +69,6 @@ export default function BunnyUploader({
           },
           onSuccess: () => {
             onUploadCompleted(uploadData.videoId, parseInt(uploadData.libraryId));
-            console.log('Upload completed successfully');
             setFile(null);
             setProgress(null);
             setUploading(false);
@@ -102,7 +101,6 @@ export default function BunnyUploader({
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (acceptedFiles.length > 1) {
-        console.log("Cannot be more 1 file");
         return jsonWithError({ result: "Error" }, { message: "Cannot upload more than 1 video" })
       }
 

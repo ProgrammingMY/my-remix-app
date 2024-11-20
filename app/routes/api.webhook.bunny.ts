@@ -21,8 +21,6 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     const data = (await request.json()) as BunnyWebhookData;
 
-    // console.log(data);
-
     if (data) {
       const db = drizzle(env.DB_drizzle, { schema });
 
@@ -41,7 +39,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     return json({ message: "ok" });
   } catch (error) {
-    console.log(error);
+    console.log("WEBHOOK BUNNY ERROR", error);
     return new Response("Internal server error", { status: 500 });
   }
 };

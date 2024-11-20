@@ -125,7 +125,7 @@ export const action = async ({ context, params, request }: ActionFunctionArgs) =
                 try {
                     await deleteVideo(existingVideo.videoId, existingVideo.libraryId, env);
                 } catch (error) {
-                    console.log(error);
+                    console.log("[DELETE VIDEO ERROR]", error);
                 }
                 finally {
                     await db

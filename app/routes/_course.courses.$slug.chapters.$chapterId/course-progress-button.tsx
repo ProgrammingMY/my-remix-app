@@ -39,7 +39,6 @@ export const CourseProgressButton = ({
             // }
 
             if (!isCompleted && nextChapterId) {
-                console.log("nextChapterId", nextChapterId);
                 navigate(`/courses/${courseSlug}/chapters/${nextChapterId}`);
             }
 
