@@ -38,7 +38,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
         const headers = new Headers();
 
-        // TODO: create reset totp
+        // create totp
         await startTOTPProcess(request, headers, user.id, user.email, db);
 
         // redirect to reset password page

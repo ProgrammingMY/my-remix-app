@@ -53,7 +53,7 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 
     const headers = new Headers();
 
-    // TODO: check if user exists
+    // check if user exists
     const db = drizzle(env.DB_drizzle, { schema });
     const existingUser = await db.query.connection.findFirst({
         where: eq(schema.connection.providerId, googleUserId)

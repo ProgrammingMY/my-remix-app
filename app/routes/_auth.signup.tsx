@@ -1,4 +1,4 @@
-import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { Form, Link, redirect, useActionData, useNavigate } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -26,14 +26,14 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     const { error, headers } = await signup(request, env);
 
-    // TODO: redirect to verify email
+    // redirect to verify email
     if (!error) {
         return redirect("/verify", {
             headers
         });
     }
 
-    return json({ error });
+    return { error };
 
 }
 // First we create our UI with the form doing a POST and the inputs with the
