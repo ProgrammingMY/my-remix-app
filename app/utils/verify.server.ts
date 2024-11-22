@@ -86,8 +86,11 @@ export async function sendVerificationEmail(
   email: string,
   code: string
 ): Promise<void> {
+  if (process.env.NODE_ENV !== "production") {
+    return console.log(`To ${email}: Your verification code is ${code}`);
+  }
+
   // TODO: send verification email with resend
-  console.log(`To ${email}: Your verification code is ${code}`);
 }
 
 export async function setEmailVerificationCookie(
