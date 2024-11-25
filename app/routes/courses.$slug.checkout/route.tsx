@@ -10,7 +10,7 @@ import {
 } from "~/components/ui/card"
 import { Separator } from "~/components/ui/separator"
 import * as schema from "~/db/schema.server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Form, useLoaderData, useParams } from "@remix-run/react";
 import PurchaseStatusCard from "./purchase-status-card";
 import { formatPrice } from "~/lib/format";
@@ -79,6 +79,7 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
             userId: user.id,
             courseId: course.id,
             billCode: bill[0].BillCode,
+            status: "started",
         }).onConflictDoUpdate({
             target: [schema.toyyibCustomer.userId, schema.toyyibCustomer.courseId],
             set: { billCode: bill[0].BillCode }
@@ -87,7 +88,6 @@ export const action = async ({ request, context, params }: ActionFunctionArgs) =
         const checkoutUrl = `${env.TOYYIB_URL}/${bill[0].BillCode}`;
 
         return redirect(checkoutUrl);
-        // return jsonWithSuccess({ result: "success" }, { message: "Success" })
 
     } catch (error) {
         console.log("[CHECKOUT ACTION]", error);
@@ -113,13 +113,24 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
         with: {
             purchases: {
                 where: eq(schema.purchase.userId, user.id),
-            }
+            },
         }
+    });
+
+    const toyyibCustomer = await db.query.toyyibCustomer.findFirst({
+        where: and(
+            eq(schema.toyyibCustomer.userId, user.id),
+            eq(schema.toyyibCustomer.courseId, course?.id!)
+        )
     });
 
     if (!course) {
         throw redirect("/user");
-    }
+    };
+
+    if (toyyibCustomer?.status === "success" || toyyibCustomer?.status === "pending") {
+        return redirect(`/courses/${slug}/status?billcode=${toyyibCustomer?.billCode}&transaction_id=${toyyibCustomer?.transactionId}`);
+    };
 
     return {
         course,
