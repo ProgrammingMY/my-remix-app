@@ -1,6 +1,7 @@
 // app/routes/login.tsx
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Form, Link, redirect, useActionData, useNavigate } from "@remix-run/react";
+import { Form, Link, redirect, useActionData, useFetcher, useNavigate } from "@remix-run/react";
+import { Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -12,6 +13,8 @@ export default function Screen() {
     const data = useActionData<typeof action>();
     const { error } = data ?? {};
     const navigate = useNavigate();
+    const fetcher = useFetcher();
+    const isSubmitting = fetcher.state === "submitting" || fetcher.state === "loading";
     return (
         <>
             <Link
@@ -40,7 +43,7 @@ export default function Screen() {
                     Enter your email below to login to your account
                 </p>
             </div>
-            <Form method="post">
+            <fetcher.Form method="post">
                 <div className="grid gap-4">
                     <div className="grid gap-2">
                         <Label htmlFor="email">Email</Label>
@@ -65,19 +68,20 @@ export default function Screen() {
                         />
                     </div>
                     {error ? <p className="text-red-600">{error.message}</p> : null}
-                    <Button type="submit" className="w-full">
-                        Login
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? <><Loader2 className="animate-spin" /> Logging in...</> : "Login"}
                     </Button>
                     <Button
                         className="w-full"
                         type="button"
                         variant={"outline"}
                         onClick={() => navigate("/api/login/google")}
+                        disabled={isSubmitting}
                     >
                         Continue with Google
                     </Button>
                 </div>
-            </Form>
+            </fetcher.Form>
             <div className="text-center">
                 <Link
                     to="/forgot-password"

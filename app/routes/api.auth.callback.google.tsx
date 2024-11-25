@@ -41,7 +41,8 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
         tokens = await google.validateAuthorizationCode(code, codeVerifier)
 
     } catch (error) {
-        // invalid code or client credentials
+        // invalid code or client credentials'
+        console.log("[GOGGLE CALLBACK] Error: ", error);
         return null;
     }
 
