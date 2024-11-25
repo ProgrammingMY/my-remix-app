@@ -5,7 +5,7 @@ export function createGoogleClient(env: Env) {
   return new Google(
     env.GOOGLE_CLIENT_ID,
     env.GOOGLE_CLIENT_SECRET,
-    "http://localhost:5173/api/auth/callback/google"
+    `${env.REMIX_PUBLIC_APP_URL}/api/auth/callback/google`
   );
 }
 
