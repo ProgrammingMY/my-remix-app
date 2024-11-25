@@ -13,8 +13,8 @@ import {
     useSidebar,
 } from "~/components/ui/sidebar"
 
-import { Link, redirect, useFetcher, useLocation, useNavigate } from "@remix-run/react";
-import { BadgeCheck, BarChart, BookOpenTextIcon, ChevronsUpDown, Home, List, LogOut, Search, Sparkles } from 'lucide-react';
+import { Link, useFetcher, useLocation, useNavigate } from "@remix-run/react";
+import { BadgeCheck, BarChart, BookOpenTextIcon, ChevronsUpDown, Home, List, LogOut, Search, SidebarClose, Sparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SafeUserType } from "~/lib/types";

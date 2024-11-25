@@ -22,7 +22,6 @@ export default function LandingPage() {
       <Navbar />
       <Hero />
       <Features />
-      {/* <About /> */}
       <FAQs />
       <Footer />
     </>

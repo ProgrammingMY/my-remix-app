@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
     NavigationMenu,
     NavigationMenuItem,
@@ -6,13 +5,15 @@ import {
 } from "~/components/ui/navigation-menu";
 import {
     Sheet,
+    SheetClose,
     SheetContent,
+    SheetDescription,
     SheetFooter,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
 } from "~/components/ui/sheet";
-import { buttonVariants } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Menu } from "lucide-react";
 import { Link } from "@remix-run/react";
 
@@ -37,12 +38,11 @@ const routeList: RouteProps[] = [
 ];
 
 export default function Navbar() {
-    const [isOpen, setIsOpen] = useState<boolean>(false);
     return (
-        <header className="sticky border-b-[1px] top-0 z-40 w-full bg-white dark:border-b-slate-700 dark:bg-background">
-            <NavigationMenu className="mx-auto">
-                <NavigationMenuList className="container mx-auto h-14 px-4 w-screen flex justify-between ">
-                    <NavigationMenuItem className="font-bold flex duration-200 lg:hover:scale-[1.10]">
+        <header className="fixed border-b-[1px] top-0 z-40 w-full bg-white dark:border-b-slate-700 dark:bg-background">
+            <div className="w-full">
+                <div className="relative h-14 px-4 w-full flex justify-between items-center">
+                    <div className="font-bold flex duration-200 lg:hover:scale-[1.10] absolute left-4">
                         <a
                             rel="noreferrer noopener"
                             href="/"
@@ -50,25 +50,21 @@ export default function Navbar() {
                         >
                             <img className="h-10 w-auto" src='/logo.png' alt="logo" />
                         </a>
-                    </NavigationMenuItem>
+                    </div>
 
                     {/* mobile */}
-                    <span className="flex md:hidden">
-
-                        <Sheet
-                            open={isOpen}
-                            onOpenChange={setIsOpen}
-                        >
-                            <SheetTrigger className="px-2">
-                                <Menu
-                                    className="flex md:hidden h-5 w-5"
-                                    onClick={() => setIsOpen(true)}
-                                >
+                    <span className="flex md:hidden absolute right-4">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost">
+                                    <Menu className="flex md:hidden h-5 w-5" />
                                     <span className="sr-only">Menu Icon</span>
-                                </Menu>
+                                </Button>
                             </SheetTrigger>
-
                             <SheetContent side={"right"}>
+                                <SheetDescription className="hidden">
+                                    Menu
+                                </SheetDescription>
                                 <SheetHeader>
                                     <SheetTitle className="font-bold text-xl">
                                         <img className="w-4/5 mx-auto" src='/logo.png' alt="logo" />
@@ -76,15 +72,15 @@ export default function Navbar() {
                                 </SheetHeader>
                                 <nav className="flex flex-col justify-center items-center gap-2 mt-4">
                                     {routeList.map(({ href, label }: RouteProps) => (
-                                        <a
-                                            rel="noreferrer noopener"
-                                            key={label}
-                                            href={href}
-                                            onClick={() => setIsOpen(false)}
-                                            className={buttonVariants({ variant: "ghost" })}
-                                        >
-                                            {label}
-                                        </a>
+                                        <SheetClose asChild key={label}>
+                                            <Link
+                                                rel="noreferrer noopener"
+                                                to={href}
+                                                className={buttonVariants({ variant: "ghost" })}
+                                            >
+                                                {label}
+                                            </Link>
+                                        </SheetClose>
                                     ))}
                                 </nav>
                                 <SheetFooter>
@@ -101,22 +97,21 @@ export default function Navbar() {
                     </span>
 
                     {/* desktop */}
-                    <nav className="hidden md:flex gap-2">
+                    <nav className="hidden md:flex gap-2 mx-auto">
                         {routeList.map((route: RouteProps, i) => (
-                            <a
+                            <Link
                                 rel="noreferrer noopener"
-                                href={route.href}
+                                to={route.href}
                                 key={i}
                                 className={`text-[17px] ${buttonVariants({
                                     variant: "ghost",
                                 })}`}
                             >
                                 {route.label}
-                            </a>
+                            </Link>
                         ))}
                     </nav>
-
-                    <div className="hidden md:flex gap-2">
+                    <div className="hidden md:flex gap-2 absolute right-4">
                         <Link
                             to="/login"
                             className={`border ${buttonVariants({ variant: "default" })}`}
@@ -124,8 +119,8 @@ export default function Navbar() {
                             Sign In
                         </Link>
                     </div>
-                </NavigationMenuList>
-            </NavigationMenu>
+                </div>
+            </div>
         </header>
     )
 }

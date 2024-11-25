@@ -4,7 +4,7 @@ import { Button, buttonVariants } from "~/components/ui/button";
 
 export default function Hero() {
     return (
-        <section className="container grid mx-auto py-20 md:py-32 gap-y-10">
+        <section className="container grid mx-auto py-32 gap-y-10 px-4 md:px-0">
             <div className="text-center space-y-6">
                 <main className="text-5xl md:text-6xl font-bold">
                     <h1 className="inline">

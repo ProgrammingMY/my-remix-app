@@ -1,6 +1,5 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
-import { set } from "zod";
 
 // components/VideoPlayer.tsx
 interface VideoPlayerProps {
@@ -23,12 +22,16 @@ export default function BunnyPlayer({
     guid,
     libraryId,
 }: VideoPlayerProps) {
+    const [mounted, setMounted] = useState(false);
     const [data, setData] = useState<ResponseProps | null>(null);
     const fetcher = useFetcher();
 
     useEffect(() => {
-        setData(null);
-    }, [])
+        setMounted(true);
+        return () => {
+            setData(null);
+        };
+    }, []);
 
     useEffect(() => {
         if (fetcher.state === "idle" && !fetcher.data) {
@@ -44,24 +47,22 @@ export default function BunnyPlayer({
                 onReady();
             }
         }
-
-        return () => {
-            setData(null);
-        }
     }, [fetcher.state, fetcher.data]);
+
+    if (!mounted || !data) {
+        return <div className="w-full aspect-video" />;
+    }
+
     return (
         <div className="relative">
-            {data && (
-                <iframe
-                    src={`https://iframe.mediadelivery.net/embed/${libraryId}/${guid}/?token=${data.signature}&expires=${data.expirationTime}`}
-                    loading="lazy"
-                    className="w-full aspect-video"
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen={true}
-                    title={title}
-                />
-            )}
+            <iframe
+                src={`https://iframe.mediadelivery.net/embed/${libraryId}/${guid}/?token=${data.signature}&expires=${data.expirationTime}`}
+                loading="lazy"
+                className="w-full aspect-video"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowFullScreen={true}
+                title={title}
+            />
         </div>
-
-    )
+    );
 }
