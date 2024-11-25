@@ -35,8 +35,12 @@ export const getChapter = async ({
       ),
     });
 
-    if (!course || !chapter) {
-      throw new Error("Chapter/course not found");
+    if (!course) {
+      throw new Error("Course not found");
+    }
+
+    if (!chapter) {
+      throw new Error("Chapter not found");
     }
 
     const purchase = await db.query.purchase.findFirst({
@@ -47,14 +51,11 @@ export const getChapter = async ({
     });
 
     let bunnyData = null;
-    let attachments: AttachmentType[] = [];
     let nextChapter: ChapterType | undefined = undefined;
 
-    if (purchase) {
-      attachments = await db.query.attachment.findMany({
-        where: eq(schema.attachment.courseId, course.id),
-      });
-    }
+    const attachments = await db.query.attachment.findMany({
+      where: eq(schema.attachment.courseId, course.id),
+    });
 
     if (chapter.isFree || purchase) {
       bunnyData = await db.query.bunnyData.findFirst({

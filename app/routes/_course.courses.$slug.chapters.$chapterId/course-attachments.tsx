@@ -1,5 +1,5 @@
 
-import { ChevronsUpDown, Download } from "lucide-react"
+import { ChevronsUpDown, Download, File } from "lucide-react"
 
 import { Button } from "~/components/ui/button"
 import {
@@ -11,12 +11,15 @@ import { useEffect, useState } from "react"
 import { jsonWithError } from "remix-toast"
 import { useFetcher, useParams } from "@remix-run/react"
 import { AttachmentType } from "~/db/schema.server"
+import { Banner } from "~/components/banner"
 
 
 export function CourseAttachments({
-    attachments
+    attachments,
+    purchase
 }: {
-    attachments: AttachmentType[]
+    attachments: (AttachmentType | Pick<AttachmentType, "fileName">)[];
+    purchase: boolean;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [attachmentName, setAttachmentName] = useState<string | null>(null);
@@ -50,10 +53,12 @@ export function CourseAttachments({
 
     }, [fetcher.state, fetcher.data])
 
-    const onDownload = async (attachment: AttachmentType) => {
+    const onDownload = async (attachment: AttachmentType | Pick<AttachmentType, "fileName">) => {
         try {
-            setAttachmentName(attachment.fileName);
-            fetcher.load(`/api/courses/${slug}/download/${attachment.fileUrl}`);
+            if ("fileUrl" in attachment) {
+                setAttachmentName(attachment.fileName);
+                fetcher.load(`/api/courses/${slug}/download/${attachment.fileUrl}`);
+            }
         } catch (error) {
             setAttachmentName(null);
             return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
@@ -78,11 +83,17 @@ export function CourseAttachments({
                 </CollapsibleTrigger>
             </div>
             <CollapsibleContent className="space-y-2">
-                {attachments.map((attachment) => (
+                {!purchase && <Banner variant="warning" label="You need to purchase the course to download the attachments." />}
+                {purchase ? attachments.map((attachment) => (
                     <button onClick={() => onDownload(attachment)} key={attachment.fileName} className="flex w-full items-center rounded-md border px-4 py-3 text-sm">
                         <Download className="h-4 w-4 mr-2" />
                         {attachment.fileName}
                     </button>
+                )) : attachments.map((attachment) => (
+                    <div key={attachment.fileName} className="flex w-full items-center rounded-md border px-4 py-3 text-sm">
+                        <File className="h-4 w-4 mr-2" />
+                        {attachment.fileName}
+                    </div>
                 ))}
             </CollapsibleContent>
         </Collapsible>

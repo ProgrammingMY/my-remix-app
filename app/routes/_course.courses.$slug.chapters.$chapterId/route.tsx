@@ -174,6 +174,7 @@ const ChapterIdPage = () => {
                                 <Separator />
                                 <CourseAttachments
                                     attachments={attachments}
+                                    purchase={!!purchase}
                                 />
                             </>
                         )}
