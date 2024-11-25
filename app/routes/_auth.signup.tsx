@@ -1,10 +1,14 @@
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
+import { ActionFunctionArgs, json, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { Form, Link, redirect, useActionData, useNavigate } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { getFormProps, getInputProps, useForm } from '@conform-to/react'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
+import { z } from "zod";
 
 import { isAuthenticated, signup } from "~/utils/auth.server"
+import { signupSchema } from "~/lib/schema";
 
 export async function loader({ request, context }: LoaderFunctionArgs) {
     const { env } = context.cloudflare;
@@ -21,20 +25,9 @@ export async function loader({ request, context }: LoaderFunctionArgs) {
 };
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
-
     const { env } = context.cloudflare;
 
-    const { error, headers } = await signup(request, env);
-
-    // redirect to verify email
-    if (!error) {
-        return redirect("/verify", {
-            headers
-        });
-    }
-
-    return { error };
-
+    return await signup(request, env);
 }
 // First we create our UI with the form doing a POST and the inputs with the
 // names we are going to use in the strategy
@@ -42,11 +35,21 @@ export default function Screen() {
     const actionData = useActionData<typeof action>();
     const navigate = useNavigate();
 
+    const [form, fields] = useForm({
+        id: "signup-form",
+        constraint: getZodConstraint(signupSchema),
+        lastResult: actionData?.result,
+        onValidate({ formData }) {
+            return parseWithZod(formData, { schema: signupSchema });
+        },
+        shouldValidate: "onBlur",
+    });
+
     return (
         <div className="flex flex-col justify-center py-8">
             <Link
                 to="/"
-                className="absolute left-8 top-8 py-2 px-4 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
+                className="py-2 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -71,45 +74,55 @@ export default function Screen() {
                 </p>
             </div>
 
-            <Form method="POST">
+            <Form method="POST" {...getFormProps(form)}>
                 <div className="flex flex-col gap-y-4 mt-8">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">
+                        <Label htmlFor={fields.email.id}>
                             Email
                         </Label>
                         <Input
-                            type="email"
-                            name="email"
-                            id="email"
+                            {...getInputProps(fields.email, { type: "email" })}
                             placeholder="Enter your email"
-                            required
+                            autoFocus
+                            autoComplete="email"
                         />
+                        {fields.email.errors && (
+                            <p className="text-red-600 text-sm">{fields.email.errors[0]}</p>
+                        )}
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="name">
-                            Name
-                        </Label>
+                        <Label htmlFor={fields.name.id}>Name</Label>
                         <Input
-                            type="text"
-                            name="name"
-                            id="name"
+                            {...getInputProps(fields.name, { type: "text" })}
                             placeholder="Enter your name"
-                            required
                         />
+                        {fields.name.errors && (
+                            <p className="text-red-600 text-sm">{fields.name.errors[0]}</p>
+                        )}
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="password">
-                            Password
-                        </Label>
+                        <Label htmlFor={fields.password.id}>Password</Label>
                         <Input
-                            type="password"
-                            name="password"
-                            id="password"
+                            {...getInputProps(fields.password, { type: "password" })}
                             placeholder="Enter your password"
-                            required
                         />
+                        {fields.password.errors && (
+                            <p className="text-red-600 text-sm">{fields.password.errors[0]}</p>
+                        )}
                     </div>
-                    {actionData && actionData?.error && <p className="text-red-600">{actionData.error.message}</p>}
+                    <div className="grid gap-2">
+                        <Label htmlFor={fields.retypePassword.id}>Retype Password</Label>
+                        <Input
+                            {...getInputProps(fields.retypePassword, { type: "password" })}
+                            placeholder="Retype your password"
+                        />
+                        {fields.retypePassword.errors && (
+                            <p className="text-red-600 text-sm">{fields.retypePassword.errors[0]}</p>
+                        )}
+                    </div>
+                    {form.errors && (
+                        <p className="text-red-600 text-sm">{form.errors[0]}</p>
+                    )}
                     <Button
                         className="w-full"
                         type="submit"

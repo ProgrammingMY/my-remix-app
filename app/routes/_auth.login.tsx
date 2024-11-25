@@ -19,7 +19,7 @@ export default function Screen() {
         <>
             <Link
                 to="/"
-                className="absolute left-8 top-8 py-2 px-4 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
+                className="py-2 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

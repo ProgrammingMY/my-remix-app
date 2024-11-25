@@ -88,10 +88,10 @@ export default function Verify() {
     const fetcher = useFetcher();
 
     return (
-        <div className="w-full flex-col flex items-center sm:max-w-md justify-center gap-2 p-4 h-[320px]">
+        <>
             <Link
                 to="/signup"
-                className="absolute left-8 top-8 py-2 px-4 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
+                className="py-2 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -109,39 +109,41 @@ export default function Verify() {
                 </svg>{" "}
                 Back
             </Link>
-            <Form method="post" {...getFormProps(form)} className="flex justify-center items-center flex-col gap-y-6">
-                <Label>
-                    Enter verify code
-                </Label>
-                <InputOTP
-                    {...getInputProps(fields["code"], { type: "text" })}
-                    maxLength={6}
-                    pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-                    autoComplete="one-time-code"
-                    autoFocus
-                >
-                    <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                </InputOTP>
-                {actionData && actionData.message && <p className="text-red-600">{actionData.message}</p>}
-                <Button type="submit" disabled={!fields.code}>
-                    Verify
-                </Button>
-            </Form>
-            <div className="text-center mt-16">
-                <div className="mt-4 text-sm">
-                    Not received the code?{" "}
-                    {/* <Button type="button" variant={"link"} onClick={() => fetcher.load("/api/request-code")}>
+            <div className="w-full flex-col flex items-center sm:max-w-md justify-center gap-2 p-4 h-[320px]">
+                <Form method="post" {...getFormProps(form)} className="flex justify-center items-center flex-col gap-y-6">
+                    <Label>
+                        Enter verify code
+                    </Label>
+                    <InputOTP
+                        {...getInputProps(fields["code"], { type: "text" })}
+                        maxLength={6}
+                        pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                        autoComplete="one-time-code"
+                        autoFocus
+                    >
+                        <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                    </InputOTP>
+                    {actionData && actionData.message && <p className="text-red-600">{actionData.message}</p>}
+                    <Button type="submit" disabled={!fields.code}>
+                        Verify
+                    </Button>
+                </Form>
+                <div className="text-center mt-16">
+                    <div className="mt-4 text-sm">
+                        Not received the code?{" "}
+                        {/* <Button type="button" variant={"link"} onClick={() => fetcher.load("/api/request-code")}>
                         Request another code
                     </Button> */}
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

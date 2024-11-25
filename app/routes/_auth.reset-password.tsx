@@ -171,10 +171,10 @@ export default function ResetPassword() {
 
 
     return (
-        <div className="w-full flex-col flex items-center sm:max-w-md justify-center gap-2 p-4 h-[320px]">
+        <>
             <Link
                 to="/login"
-                className="absolute left-8 top-8 py-2 px-4 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
+                className="py-2 rounded-md no-underline text-foreground bg-btn-background hover:bg-btn-background-hover flex items-center group text-sm"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -192,49 +192,51 @@ export default function ResetPassword() {
                 </svg>{" "}
                 Back
             </Link>
-            <Form method="post" {...getFormProps(form)} className="flex justify-center items-center flex-col gap-y-6">
-                <Label>
-                    Enter verify code
-                </Label>
-                <InputOTP
-                    {...getInputProps(fields["code"], { type: "text" })}
-                    maxLength={6}
-                    pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-                    autoComplete="one-time-code"
-                    autoFocus
-                    disabled={loaderData?.message === "ok"}
-                >
-                    <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                </InputOTP>
-                {loaderData?.message === "ok" && (
-                    <>
-                        <Label>
-                            Enter new password
-                        </Label>
-                        <Input {...getInputProps(fields["password"], { type: "password" })} />
-                        {loaderData && loaderData.message && <p className="text-red-600">{loaderData.message}</p>}
-                    </>
-                )}
+            <div className="w-full flex-col flex items-center sm:max-w-md justify-center gap-2 h-[320px]">
+                <Form method="post" {...getFormProps(form)} className="flex justify-center items-center flex-col gap-y-6">
+                    <Label>
+                        Enter verify code
+                    </Label>
+                    <InputOTP
+                        {...getInputProps(fields["code"], { type: "text" })}
+                        maxLength={6}
+                        pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                        autoComplete="one-time-code"
+                        autoFocus
+                        disabled={loaderData?.message === "ok"}
+                    >
+                        <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                    </InputOTP>
+                    {loaderData?.message === "ok" && (
+                        <>
+                            <Label>
+                                Enter new password
+                            </Label>
+                            <Input {...getInputProps(fields["password"], { type: "password" })} />
+                            {loaderData && loaderData.message && <p className="text-red-600">{loaderData.message}</p>}
+                        </>
+                    )}
 
-                <Button type="submit">
-                    Submit
-                </Button>
-            </Form>
-            <div className="text-center mt-16">
-                <div className="mt-4 text-sm">
-                    Not received the code?{" "}
-                    {/* <Button type="button" variant={"link"} onClick={() => fetcher.load("/api/request-code")}>
+                    <Button type="submit">
+                        Submit
+                    </Button>
+                </Form>
+                <div className="text-center mt-16">
+                    <div className="mt-4 text-sm">
+                        Not received the code?{" "}
+                        {/* <Button type="button" variant={"link"} onClick={() => fetcher.load("/api/request-code")}>
                         Request another code
                     </Button> */}
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

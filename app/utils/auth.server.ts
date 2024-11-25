@@ -14,6 +14,7 @@ import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "@remix-run/cloudflare";
+import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import {
   deleteEmailVerificationCookie,
   prepareEmailVerification,
@@ -21,13 +22,9 @@ import {
   setEmailVerificationCookie,
 } from "./verify.server";
 import { removeGoogleSession } from "./google.server";
+import { signupSchema } from "~/lib/schema";
 
 export const sessionToken = "token";
-
-const payloadSchema = z.object({
-  email: z.string(),
-  password: z.string(),
-});
 
 export async function isAuthenticated(request: Request, env: Env) {
   const cookieSession = await getSession(request.headers.get("Cookie"));
@@ -143,22 +140,18 @@ export async function login(request: Request, env: Env) {
 
 export async function signup(request: Request, env: Env) {
   const formData = await request.formData();
-
-  const email = formData.get("email") as string;
-  const name = formData.get("name") as string;
-  const password = formData.get("password") as string;
-
-  // TODO: validate input
+  const submission = parseWithZod(formData, { schema: signupSchema });
 
   let headers = new Headers();
+  let message = "";
 
-  if (!email || !name || !password) {
-    const error = new Error("Email, name and password are required");
+  if (submission.status !== "success") {
     return {
-      error,
-      headers,
+      result: submission.reply(),
     };
   }
+
+  const { email, name, password } = submission.value;
 
   const db = drizzle(env.DB_drizzle, { schema });
 
@@ -166,13 +159,17 @@ export async function signup(request: Request, env: Env) {
     where: eq(schema.user.email, email.toLowerCase()),
   });
 
-  if (existingUser && existingUser.emailVerified) {
-    const error = {
-      message: "Email already exists",
-    };
+  if (existingUser && !existingUser.hashedPassword) {
+    message = "You logged in with Google, please continue with Google";
     return {
-      error,
-      headers,
+      result: submission.reply({ formErrors: [message] }),
+    };
+  }
+
+  if (existingUser && existingUser.emailVerified) {
+    message = "Email already exists";
+    return {
+      result: submission.reply({ formErrors: [message] }),
     };
   }
 
@@ -200,10 +197,9 @@ export async function signup(request: Request, env: Env) {
 
   await startTOTPProcess(request, headers, user[0].id, user[0].email, db);
 
-  return {
-    error: null,
+  return redirect("/verify", {
     headers,
-  };
+  });
 }
 
 export async function logout(
