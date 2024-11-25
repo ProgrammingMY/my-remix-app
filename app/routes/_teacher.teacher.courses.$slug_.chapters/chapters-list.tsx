@@ -7,9 +7,10 @@ import {
 } from "@hello-pangea/dnd";
 
 import { cn } from "~/lib/utils";
-import { Grip, Pencil } from "lucide-react";
+import { ChevronRight, Grip } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
 import { ChapterType } from "~/db/schema.server";
+import { Link, useLocation, useParams } from "@remix-run/react";
 
 interface ChaptersListProps {
     items: ChapterType[];
@@ -24,6 +25,8 @@ export const ChaptersList = ({ items,
 ) => {
     const [isMounted, setIsMounted] = useState(false);
     const [chapters, setChapters] = useState(items);
+    const { slug } = useParams();
+    const pathname = useLocation().pathname;
 
     useEffect(() => {
         setIsMounted(true);
@@ -69,7 +72,7 @@ export const ChaptersList = ({ items,
                                 {(provided) => (
                                     <div className={cn(
                                         "flex items-center gap-x-2 bg-slate-200 border-slate-200 border text-slate-700 rounded-md mb-4 text-sm",
-                                        chapter.isPublished && "bg-sky-100 border-sky-200 text-sky-700",
+                                        pathname.includes(chapter.id) && "bg-sky-100 border-sky-200 text-sky-700"
                                     )}
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
@@ -83,23 +86,27 @@ export const ChaptersList = ({ items,
                                             <Grip className="h-5 w-5" />
 
                                         </div>
-                                        {chapter.title}
-                                        <div className="ml-auto pr-2 flex items-center gap-x-2">
-                                            {chapter.isFree && (
-                                                <Badge>
-                                                    Free
+                                        <Link
+                                            to={`/teacher/courses/${slug}/chapters/${chapter.id}`}
+                                            className="flex px-2 py-3 justify-between w-full"
+                                        >
+                                            {chapter.title}
+                                            <div className="ml-auto pr-2 flex items-center gap-x-2">
+                                                {chapter.isFree && (
+                                                    <Badge>
+                                                        Free
+                                                    </Badge>
+                                                )}
+                                                <Badge className={cn(
+                                                    "bg-slate-500",
+                                                    chapter.isPublished && "bg-sky-700"
+                                                )}>
+                                                    {chapter.isPublished ? "Published" : "Draft"}
                                                 </Badge>
-                                            )}
-                                            <Badge className={cn(
-                                                "bg-slate-500",
-                                                chapter.isPublished && "bg-sky-700"
-                                            )}>
-                                                {chapter.isPublished ? "Published" : "Draft"}
-                                            </Badge>
-                                            <Pencil
-                                                onClick={() => onEdit(chapter.id)}
-                                                className="h-4 w-4 cursor-pointer hover:opacity-75 transition" />
-                                        </div>
+                                                <ChevronRight
+                                                    className="h-4 w-4 cursor-pointer hover:opacity-75 transition" />
+                                            </div>
+                                        </Link>
                                     </div>
                                 )}
 

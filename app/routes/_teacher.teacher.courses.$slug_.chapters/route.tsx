@@ -19,7 +19,7 @@ import * as schema from '~/db/schema.server';
 import { ChaptersList } from './chapters-list';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from '@remix-run/cloudflare';
-import { Link, Outlet, useFetcher, useLoaderData, useNavigate, useParams } from '@remix-run/react';
+import { Link, Outlet, useFetcher, useLoaderData, useNavigate, useNavigation, useParams } from '@remix-run/react';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { ChapterType } from '~/db/schema.server';
@@ -133,11 +133,14 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
 
 const ChapterPage = () => {
     const { course } = useLoaderData<typeof loader>();
-    const fetcher = useFetcher();
-    const navigate = useNavigate();
     const { slug } = useParams();
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const fetcher = useFetcher();
+    const navigation = useNavigation();
+
+    const isLoading = navigation.state === "loading";
 
     const toggleCreating = () => {
         setIsCreating((prev) => !prev);
@@ -182,12 +185,12 @@ const ChapterPage = () => {
     }
 
     const onEdit = (id: string) => {
-        navigate(`/teacher/courses/${slug}/chapters/${id}`);
+        // navigate(`/teacher/courses/${slug}/chapters/${id}`);
     }
 
 
     return (
-        <div className='grid grid-flow-row grid-cols-1 md:grid-cols-3 gap-x-6'>
+        <div className='grid grid-flow-row grid-cols-1 lg:grid-cols-3 gap-x-6'>
             <Link
                 to={`/teacher/courses/${slug}`}
                 className='flex items-center text-sm hover:opacity-75 transition mb-6'
@@ -202,7 +205,7 @@ const ChapterPage = () => {
                     </div>
                 )}
                 <div className='font-medium flex items-center justify-between'>
-                    Course Chapters
+                    Choose a chapter
                     <Button onClick={toggleCreating} variant='ghost' type='button'>
                         {isCreating ? (
                             <>Cancel</>
@@ -262,6 +265,11 @@ const ChapterPage = () => {
                 )}
             </div >
             <div className='relative mt-6 border bg-slate-100 rounded-md p-4 col-span-2' >
+                {isLoading && (
+                    <div className='absolute h-full w-full bg-slate-500/20 top-0 right-0 rounded-m flex items-center justify-center'>
+                        <Loader2 className='h-6 w-6 animate-spin text-sky-700' />
+                    </div>
+                )}
                 <Outlet />
             </div>
         </div>

@@ -95,6 +95,14 @@ export const loader = async ({
           courseId: course.id,
         });
 
+        // update toyyibCustomer status
+        await db
+          .update(schema.toyyibCustomer)
+          .set({
+            status: "success",
+          })
+          .where(eq(schema.toyyibCustomer.billCode, billCode));
+
         return redirectWithSuccess(
           `/courses/${params.slug}`,
           "Course purchased successfully"
@@ -102,12 +110,27 @@ export const loader = async ({
 
       case "2":
       case "4":
+        // update toyyibCustomer status
+        await db
+          .update(schema.toyyibCustomer)
+          .set({
+            status: "pending",
+          })
+          .where(eq(schema.toyyibCustomer.billCode, billCode));
+
         return redirectWithWarning(
           `/courses/${params.slug}`,
           "Payment pending, please check with your bank"
         );
 
       case "3":
+        // update toyyibCustomer status
+        await db
+          .update(schema.toyyibCustomer)
+          .set({
+            status: "failed",
+          })
+          .where(eq(schema.toyyibCustomer.billCode, billCode));
         return redirectWithError(`/courses/${params.slug}`, "Payment failed");
 
       default:
@@ -121,9 +144,3 @@ export const loader = async ({
     return new Response("Internal server error", { status: 500 });
   }
 };
-
-export const action = async ({
-  params,
-  context,
-  request,
-}: ActionFunctionArgs) => {};
