@@ -52,10 +52,22 @@ export const getChapter = async ({
 
     let bunnyData = null;
     let nextChapter: ChapterType | undefined = undefined;
+    let attachments: (AttachmentType | Pick<AttachmentType, "fileName">)[] = [];
 
-    const attachments = await db.query.attachment.findMany({
-      where: eq(schema.attachment.courseId, course.id),
-    });
+    if (purchase) {
+      attachments = await db.query.attachment.findMany({
+        where: eq(schema.attachment.courseId, course.id),
+      });
+    }
+    // if not purchased, then just show the attachment name only
+    else {
+      attachments = await db.query.attachment.findMany({
+        where: eq(schema.attachment.courseId, course.id),
+        columns: {
+          fileName: true,
+        },
+      });
+    }
 
     if (chapter.isFree || purchase) {
       bunnyData = await db.query.bunnyData.findFirst({
