@@ -13,6 +13,8 @@ import toast, { Toaster } from "react-hot-toast";
 
 import "./tailwind.css";
 import { useEffect } from "react";
+import { getConfetti } from "~/utils/confetti.server";
+import { Confetti } from "~/components/confetti";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -73,11 +75,23 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // Extracts the toast from the request
-  const { toast, headers } = await getToast(request);
-  const toastLib = toast;
+  // Get both toast and confetti from the request
+  const [{ toast, headers: toastHeaders }, { confetti, headers: confettiHeaders }] =
+    await Promise.all([
+      getToast(request),
+      getConfetti(request)
+    ]);
+
+  // Combine the headers
+  const headers = new Headers(toastHeaders);
+  for (const [key, value] of new Headers(confettiHeaders).entries()) {
+    headers.append(key, value);
+  }
   // Important to pass in the headers so the toast is cleared properly
-  return json({ toastLib }, { headers });
+  return json({
+    toastLib: toast,
+    confetti
+  }, { headers });
 }
 
 
@@ -103,7 +117,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { toastLib } = useLoaderData<typeof loader>();
+  const { toastLib, confetti } = useLoaderData<typeof loader>();
 
   useEffect(() => {
     if (toastLib) {
@@ -124,6 +138,7 @@ export default function App() {
   return (
     <>
       <Toaster />
+      <Confetti id={confetti} />
       <Outlet />
     </>
   );

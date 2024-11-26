@@ -12,6 +12,7 @@ import {
 } from "remix-toast";
 import * as schema from "~/db/schema.server";
 import { isAuthenticated } from "~/utils/auth.server";
+import { redirectWithConfetti } from "~/utils/confetti.server";
 
 export const loader = async ({
   params,
@@ -103,10 +104,7 @@ export const loader = async ({
           })
           .where(eq(schema.toyyibCustomer.billCode, billCode));
 
-        return redirectWithSuccess(
-          `/courses/${params.slug}`,
-          "Course purchased successfully"
-        );
+        return redirectWithConfetti(request, `/courses/${params.slug}`);
 
       case "2":
       case "4":

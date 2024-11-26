@@ -48,8 +48,6 @@ export const loader = async ({ params, context, request }: LoaderFunctionArgs) =
         )
     });
 
-    // redirect(`/courses/${course.slug}/chapters/${course.chapters[0].id}`);
-
     return {
         course,
         purchase
