@@ -56,7 +56,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
     if (code && typeof code === "string" && password && typeof password === "string") {
         // make sure the user have email verification cookie
-        const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, db);
+        const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, env);
 
 
         if (!emailVerificationRequest) {
@@ -70,7 +70,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
             code,
             verificationId: emailVerificationRequest.id,
             userId: emailVerificationRequest.userId,
-            db,
+            env,
         });
 
         if (error) {
@@ -94,7 +94,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
 
 
         // invalidate the email verification cookie
-        await deleteEmailVerificationCookie(request, headers, db);
+        await deleteEmailVerificationCookie(request, headers, env);
 
         // assign the user to the session
         await startUserSession({ userId: user[0].id, db, headers });
@@ -124,7 +124,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
     const headers = new Headers();
 
     // make sure the user have email verification cookie
-    const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, db);
+    const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, env);
 
     if (!emailVerificationRequest) {
         return redirect("/signup", {
@@ -137,7 +137,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
         code,
         verificationId: emailVerificationRequest.id,
         userId: emailVerificationRequest.userId,
-        db,
+        env,
     });
 
     if (error) {

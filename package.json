@@ -6,7 +6,7 @@
   "scripts": {
     "build": "remix vite:build",
     "deploy": "npm run build && wrangler pages deploy",
-    "dev": "remix vite:dev",
+    "dev": "remix vite:dev --host",
     "tunnel": "C:\\Users\\loqma\\Documents\\Ngrok\\ngrok-v3-stable-windows-amd64\\ngrok.exe http --domain=blowfish-organic-wallaby.ngrok-free.app 5173",
     "drizzle:update": "drizzle-kit generate",
     "db:migrate:local": "npm run drizzle:update && npx wrangler d1 migrations apply kelas-tech-drizzle --local",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.679.0",
+    "@aws-sdk/client-ses": "^3.699.0",
     "@aws-sdk/s3-request-presigner": "^3.687.0",
     "@conform-to/react": "^1.2.2",
     "@conform-to/zod": "^1.2.2",

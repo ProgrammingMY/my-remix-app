@@ -114,7 +114,7 @@ export async function login(request: Request, env: Env) {
 
   // if user is not verified
   if (!userInDb.emailVerified) {
-    await startTOTPProcess(request, headers, userInDb.id, userInDb.email, db);
+    await startTOTPProcess(request, headers, userInDb.id, userInDb.email, env);
     const error = {
       message: "Please verify your email",
       redirectTo: "/verify",
@@ -166,6 +166,31 @@ export async function signup(request: Request, env: Env) {
     };
   }
 
+  // Handle existing unverified user
+  if (existingUser && !existingUser.emailVerified) {
+    // Update the existing user's information
+    await db
+      .update(schema.user)
+      .set({
+        name,
+        hashedPassword: await bcrypt.hash(password, 12),
+      })
+      .where(eq(schema.user.id, existingUser.id));
+
+    // Restart verification process
+    await startTOTPProcess(
+      request,
+      headers,
+      existingUser.id,
+      existingUser.email,
+      env
+    );
+
+    return redirect("/verify", {
+      headers,
+    });
+  }
+
   if (existingUser && existingUser.emailVerified) {
     message = "Email already exists";
     return {
@@ -195,7 +220,7 @@ export async function signup(request: Request, env: Env) {
       email: schema.user.email,
     });
 
-  await startTOTPProcess(request, headers, user[0].id, user[0].email, db);
+  await startTOTPProcess(request, headers, user[0].id, user[0].email, env);
 
   return redirect("/verify", {
     headers,
@@ -240,25 +265,24 @@ export async function startTOTPProcess(
   headers: Headers,
   userId: string,
   email: string,
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  }
+  env: Env
 ) {
   // delete existing email verification session
-  await deleteEmailVerificationCookie(request, headers, db);
+  await deleteEmailVerificationCookie(request, headers, env);
 
   // create a verification request
   const verificationRequest = await prepareEmailVerification({
     request,
     userId,
     email,
-    db,
+    env,
   });
 
   // send a verification email to the user
   await sendVerificationEmail(
     verificationRequest.email,
-    verificationRequest.code
+    verificationRequest.code,
+    env
   );
 
   // store the verification id in a cookie

@@ -14,7 +14,7 @@ export default function Screen() {
     const { error } = data ?? {};
     const navigate = useNavigate();
     const fetcher = useFetcher();
-    const isSubmitting = fetcher.state === "submitting" || fetcher.state === "loading";
+    const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
     return (
         <>
             <Link
@@ -68,15 +68,15 @@ export default function Screen() {
                         />
                     </div>
                     {error ? <p className="text-red-600">{error.message}</p> : null}
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting ? <><Loader2 className="animate-spin" /> Logging in...</> : "Login"}
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? <><Loader2 className="animate-spin" /> Logging in...</> : "Login"}
                     </Button>
                     <Button
                         className="w-full"
                         type="button"
                         variant={"outline"}
                         onClick={() => navigate("/api/login/google")}
-                        disabled={isSubmitting}
+                        disabled={isLoading}
                     >
                         Continue with Google
                     </Button>

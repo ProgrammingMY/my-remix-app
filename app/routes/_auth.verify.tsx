@@ -29,7 +29,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     const headers = new Headers();
 
     // make sure the user have email verification cookie
-    const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, db);
+    const emailVerificationRequest = await verifyEmailVerificationCookie(request, headers, env);
 
     if (!emailVerificationRequest) {
         return redirect("/signup", {
@@ -43,7 +43,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
         code,
         verificationId: emailVerificationRequest.id,
         userId: emailVerificationRequest.userId,
-        db
+        env,
     })
 
     if (error) {
@@ -61,7 +61,7 @@ export const action = async ({ request, context }: ActionFunctionArgs) => {
     }
 
     // delete the verification cookie
-    await deleteEmailVerificationCookie(request, headers, db);
+    await deleteEmailVerificationCookie(request, headers, env);
 
     // start user session
     await startUserSession({ userId: emailVerificationRequest.userId, db, headers });

@@ -1,9 +1,11 @@
-import { DrizzleD1Database } from "drizzle-orm/d1";
+import { drizzle, DrizzleD1Database } from "drizzle-orm/d1";
 import { generateRandomOTP } from "./utils.server";
 
 import * as schema from "~/db/schema.server";
 import { verificationStorage } from "./session.server";
 import { and, eq } from "drizzle-orm";
+import { sendEmail } from "./email.server";
+import { verifyEmailTemplate } from "./template.server";
 
 type VerificationType = "onboarding" | "reset-password" | "2fa";
 
@@ -48,17 +50,18 @@ export async function prepareEmailVerification({
   request,
   userId,
   email,
-  db,
+  env,
 }: {
   request: Request;
   userId: string;
   email: string;
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  };
+  env: Env;
 }) {
   //   const verifyUrl = getRedirectToUrl({ request, type, target });
   //   const redirectTo = new URL(verifyUrl.toString());
+
+  // create drizzle client
+  const db = drizzle(env.DB_drizzle, { schema });
 
   const code = generateRandomOTP();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 10);
@@ -84,13 +87,21 @@ export async function prepareEmailVerification({
 
 export async function sendVerificationEmail(
   email: string,
-  code: string
+  code: string,
+  env: Env
 ): Promise<void> {
-  if (process.env.NODE_ENV !== "production") {
-    return console.log(`To ${email}: Your verification code is ${code}`);
-  }
+  // send verification email with AWS SES
+  const subject = "Your Verification Code";
+  const text = `Your verification code is: ${code}`;
+  const html = verifyEmailTemplate(code, env.APP_LOGO_URL);
 
-  // TODO: send verification email with resend
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+    text,
+    env,
+  });
 }
 
 export async function setEmailVerificationCookie(
@@ -109,10 +120,11 @@ export async function setEmailVerificationCookie(
 export async function deleteEmailVerificationCookie(
   request: Request,
   headers: Headers,
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  }
+  env: Env
 ): Promise<void> {
+  // create drizzle client
+  const db = drizzle(env.DB_drizzle, { schema });
+
   const verificationCookie = await verificationStorage.getSession(
     request.headers.get("Cookie")
   );
@@ -137,12 +149,10 @@ export async function deleteEmailVerificationCookie(
   );
 }
 
-export async function getUserEmailVerificationRequest(
-  id: string,
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  }
-) {
+export async function getUserEmailVerificationRequest(id: string, env: Env) {
+  // create drizzle client
+  const db = drizzle(env.DB_drizzle, { schema });
+
   const emailVerification = await db.query.emailVerification.findFirst({
     where: and(eq(schema.emailVerification.id, id)),
     columns: {
@@ -162,9 +172,7 @@ export async function getUserEmailVerificationRequest(
 export async function verifyEmailVerificationCookie(
   request: Request,
   headers: Headers,
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  }
+  env: Env
 ) {
   const verificationCookie = await verificationStorage.getSession(
     request.headers.get("cookie")
@@ -182,11 +190,11 @@ export async function verifyEmailVerificationCookie(
 
   const emailVerificationRequest = await getUserEmailVerificationRequest(
     emailVerificationId,
-    db
+    env
   );
 
   if (emailVerificationRequest === null) {
-    await deleteEmailVerificationCookie(request, headers, db);
+    await deleteEmailVerificationCookie(request, headers, env);
   }
 
   return emailVerificationRequest;
@@ -197,28 +205,30 @@ export async function createEmailVerificationRequest({
   headers,
   userId,
   email,
-  db,
+  env,
 }: {
   request: Request;
   headers: Headers;
   userId: string;
   email: string;
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  };
+  env: Env;
 }) {
+  // create drizzle client
+  const db = drizzle(env.DB_drizzle, { schema });
+
   // create a verification request
   const verificationRequest = await prepareEmailVerification({
     request,
     userId,
     email,
-    db,
+    env,
   });
 
   // send a verification email to the user
   await sendVerificationEmail(
     verificationRequest.email,
-    verificationRequest.code
+    verificationRequest.code,
+    env
   );
 
   // store the verification id in a cookie
@@ -229,15 +239,16 @@ export async function verifyTotp({
   code,
   verificationId,
   userId,
-  db,
+  env,
 }: {
   code?: string;
   verificationId: string;
   userId: string;
-  db: DrizzleD1Database<typeof schema> & {
-    $client: D1Database;
-  };
+  env: Env;
 }) {
+  // create drizzle client
+  const db = drizzle(env.DB_drizzle, { schema });
+
   if (!code || typeof code !== "string" || code.length !== 6) {
     const error = {
       message: "Invalid code format",
