@@ -14,9 +14,6 @@ interface CourseCardProps {
     category: string;
 }
 
-const bucketUrl = "https://bucket.programmingmy.com";
-
-
 export const CourseCard = ({
     slug,
     title,
@@ -33,7 +30,7 @@ export const CourseCard = ({
                     <img
                         className="object-cover"
                         alt={title}
-                        src={`${bucketUrl}/${imageUrl}`}
+                        src={`/api/download/${encodeURIComponent(imageUrl)}`}
                     />
                 </div>
                 <div className="flex flex-col pt-2">

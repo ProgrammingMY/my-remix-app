@@ -154,7 +154,13 @@ export default function CheckoutPage() {
                             <Separator />
                         </CardHeader>
                         <CardContent className="grid gap-y-4">
-                            <img className="rounded-md" src={`https://bucket.programmingmy.com/${course.imageUrl!}`} alt={course?.title} />
+                            <div className="relative w-full aspect-video rounded-md overflow-hidden">
+                                <img
+                                    className="rounded-md"
+                                    src={`/api/download/${encodeURIComponent(course.imageUrl!)}`}
+                                    alt={course?.title}
+                                />
+                            </div>
                             <CardTitle>
                                 {course?.title}
                             </CardTitle>

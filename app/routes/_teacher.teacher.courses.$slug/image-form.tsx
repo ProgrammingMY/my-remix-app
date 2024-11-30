@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { ImageIcon, PlusCircle } from 'lucide-react';
 import { CourseFormProps } from '~/lib/types';
 import { UploadDropzone } from '~/components/ui/upload-dropzone';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { useFetcher } from '@remix-run/react';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 
@@ -71,7 +70,10 @@ export const ImageForm = ({ initialData, courseSlug }: CourseFormProps) => {
                     </div>
                 ) : (
                     <div className='relative aspect-video mt-2'>
-                        <img src={`https://bucket.programmingmy.com/${initialData.imageUrl}`} alt="Course image" />
+                        <img
+                            src={`/api/download/${encodeURIComponent(initialData.imageUrl)}`}
+                            alt="Course image"
+                        />
                     </div>
                 )
             ) : (

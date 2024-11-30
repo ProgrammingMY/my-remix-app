@@ -1,9 +1,8 @@
 import * as z from 'zod';
 import { Button } from '~/components/ui/button';
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { File, Loader2, PlusCircle, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { jsonWithError, jsonWithSuccess } from 'remix-toast';
 import { UploadDropzone } from '~/components/ui/upload-dropzone';
 import { useFetcher } from '@remix-run/react';
