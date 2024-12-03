@@ -28,11 +28,11 @@ export default function Dashboard() {
     return (
         <SidebarProvider>
             <AppSidebar user={user} />
-            <div className="h-[80px] fixed w-full top-0 z-40">
+            <div className="h-[80px] fixed w-full top-0 z-40 block md:hidden">
                 <Navbar userName={user.name} />
             </div>
             <div className="h-full w-full">
-                <main className="h-full mt-6 pt-[80px] p-6">
+                <main className="h-full mt-6 pt-[80px] md:pt-0 p-6">
                     <Outlet context={{ user }} />
                 </main>
             </div>

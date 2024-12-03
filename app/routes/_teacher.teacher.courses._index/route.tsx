@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { course } from "~/db/schema.server";
 import { desc, eq } from "drizzle-orm";
 import { isAuthenticated } from "~/utils/auth.server";
+import { capitalizeFirstLetter } from "~/lib/format";
 
 export const loader = async ({
   context,
@@ -30,15 +31,18 @@ export const loader = async ({
     )
     .orderBy(desc(course.createdAt))
 
-  return { courses };
+  return { user, courses };
 };
 
 export default function TeacherCourses() {
-  const { courses } = useLoaderData<typeof loader>();
+  const { user, courses } = useLoaderData<typeof loader>();
 
   return (
-    <>
+    <div className="p-6 space-y-4">
+      <h1 className="text-3xl font-bold">
+        Welcome, <span>{capitalizeFirstLetter(user?.name ?? "")}!</span>
+      </h1>
       <DataTable columns={columns} data={courses} />
-    </>
+    </div>
   );
 }

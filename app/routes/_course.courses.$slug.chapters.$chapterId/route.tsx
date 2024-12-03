@@ -168,9 +168,6 @@ const ChapterIdPage = () => {
                             </Button>
                         )}
                     </div>
-                    <Preview
-                        value={chapter.description || ""}
-                    />
                     <Separator />
                     <div>
                         {!!attachments.length && (
@@ -183,6 +180,14 @@ const ChapterIdPage = () => {
                             </>
                         )}
                     </div>
+                    <Separator />
+                    <div className="p-4">
+                        <h2 className="text-lg font-semibold">Course Description</h2>
+                        <Preview
+                            value={course.description || ""}
+                        />
+                    </div>
+
                 </div>
             </div>
         </div>

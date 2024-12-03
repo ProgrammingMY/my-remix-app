@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { CategoryType, ChapterType, CourseType } from "~/db/schema.server";
 import { getProgress } from "~/utils/getProgress.server";
 import { isAuthenticated } from "~/utils/auth.server";
+import { capitalizeFirstLetter } from "~/lib/format";
 
 type CourseWithProgressWithCategory = CourseType & {
     category: CategoryType;
@@ -61,12 +62,14 @@ export const loader = async ({ request, context, params }: LoaderFunctionArgs) =
         );
 
         return {
+            user,
             completedCourses,
             coursesInProgress,
         };
     } catch (error) {
         console.log("[DASHBOARD COURSES]", error);
         return {
+            user: null,
             completedCourses: [],
             coursesInProgress: [],
         };
@@ -74,10 +77,13 @@ export const loader = async ({ request, context, params }: LoaderFunctionArgs) =
 }
 
 const UserDashboard = () => {
-    const { completedCourses, coursesInProgress } = useLoaderData<typeof loader>();
+    const { user, completedCourses, coursesInProgress } = useLoaderData<typeof loader>();
 
     return (
         <div className="p-6 space-y-4">
+            <h1 className="text-3xl font-bold">
+                Welcome, <span>{capitalizeFirstLetter(user?.name ?? "")}</span>
+            </h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InfoCard
                     icon={Clock}
@@ -92,6 +98,9 @@ const UserDashboard = () => {
                     variant="success"
                 />
             </div>
+            <h2 className="text-md text-muted-foreground mt-4">
+                Continue watching
+            </h2>
             <CoursesList
                 items={[...coursesInProgress, ...completedCourses]}
             />

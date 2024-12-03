@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { isAuthenticated } from "~/utils/auth.server";
 import { SafeUserType } from "~/lib/types";
 import { isTeacher } from "~/lib/isTeacher";
+import { Card } from "~/components/ui/card";
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
     try {
@@ -57,8 +58,8 @@ export default function CreatePage() {
     const navigation = useNavigation();
     const isSubmitting = navigation.formAction === "/teacher/create";
     return (
-        <div className='relative max-w-5xl mx-auto flex md:items-center md:justify-center h-full'>
-            <div>
+        <div className='relative md:min-h-[80svh] max-w-5xl mx-auto flex items-center justify-center '>
+            <Card className="p-6 space-y-4 h-30">
                 <h1 className='text-2xl'>
                     Name Your Course
                 </h1>
@@ -70,7 +71,7 @@ export default function CreatePage() {
                     method='post'
                     action="/teacher/create"
                 >
-                    <fieldset disabled={isSubmitting} className="space-y-8" >
+                    <fieldset disabled={isSubmitting} className="space-y-6" >
                         <Label>Course Title</Label>
                         <Input placeholder="Title" name='title' />
                         <div className='flex items-center gap-x-2'>
@@ -86,7 +87,7 @@ export default function CreatePage() {
                     </fieldset>
                 </Form>
 
-            </div>
+            </Card>
             {isSubmitting ? (
                 <div className='absolute h-full w-full bg-slate-500/20 top-0 right-0 rounded-m flex items-center justify-center'>
                     <Loader2 className='h-10 w-10 animate-spin text-sky-700' />

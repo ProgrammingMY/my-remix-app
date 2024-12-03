@@ -70,15 +70,12 @@ export function AppSidebar({
     }
 
     return (
-        <Sidebar collapsible="icon">
+        <Sidebar>
             <SidebarContent>
                 <SidebarGroup>
-                    {state === "expanded" && (
-                        <div className="flex justify-between items-center">
-                            <SidebarHeader className="text-lg font-medium line-clamp-1">KELAS TECH</SidebarHeader>
-                            <SidebarTrigger />
-                        </div>
-                    )}
+                    <SidebarHeader>
+                        <img className="w-4/5 mx-auto py-2" src='/logo.png' alt="logo" />
+                    </SidebarHeader>
                     <SidebarSeparator />
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -91,7 +88,7 @@ export function AppSidebar({
                             )}
                             {items.map((item) => (
                                 <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton asChild>
+                                    <SidebarMenuButton size={"lg"} className="px-6" isActive={pathname === item.href} asChild>
                                         <Link to={item.href}>
                                             <item.icon />
                                             <span>{item.label}</span>

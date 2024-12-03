@@ -6,8 +6,9 @@ import { CoursesList } from '~/components/courses-list';
 import { CategoryType, CourseType } from '~/db/schema.server';
 import { getProgress } from '~/utils/getProgress.server';
 import * as schema from '~/db/schema.server';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, like } from 'drizzle-orm';
 import { isAuthenticated } from '~/utils/auth.server';
+import { SearchInput } from '~/components/search-input';
 
 type CourseWithProgressWithCategory = CourseType & {
     category: CategoryType | null;
@@ -18,6 +19,9 @@ type CourseWithProgressWithCategory = CourseType & {
 export const loader = async ({ context, params, request }: LoaderFunctionArgs) => {
     try {
         const { env } = context.cloudflare;
+
+        const url = new URL(request.url);
+        const title = url.searchParams.get('title');
 
         const { user, headers } = await isAuthenticated(request, env);
 
@@ -30,7 +34,10 @@ export const loader = async ({ context, params, request }: LoaderFunctionArgs) =
         const db = drizzle(env.DB_drizzle, { schema });
 
         const courses = await db.query.course.findMany({
-            where: eq(schema.course.isPublished, true),
+            where: and(
+                eq(schema.course.isPublished, true),
+                title ? like(schema.course.title, `%${title}%`) : undefined
+            ),
             with: {
                 category: true,
                 chapters: {
@@ -77,7 +84,8 @@ const Search = () => {
 
     return (
         <>
-            <div className='space-y-4'>
+            <div className='p-6 space-y-4'>
+                <SearchInput />
                 <CoursesList
                     items={courses}
                 />

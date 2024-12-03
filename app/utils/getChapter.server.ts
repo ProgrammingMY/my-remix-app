@@ -25,6 +25,7 @@ export const getChapter = async ({
       columns: {
         price: true,
         id: true,
+        description: true,
       },
     });
 

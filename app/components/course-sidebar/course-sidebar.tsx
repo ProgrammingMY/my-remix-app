@@ -30,7 +30,7 @@ interface CourseSidebarProps {
 
 const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
     return (
-        <Sidebar variant="inset" collapsible="offcanvas">
+        <Sidebar>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarHeader className="text-lg font-medium line-clamp-1">{course.title}</SidebarHeader>
