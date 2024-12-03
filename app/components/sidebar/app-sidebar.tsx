@@ -56,6 +56,8 @@ export function AppSidebar({
     const navigate = useNavigate();
     const fetcher = useFetcher();
 
+    const defaultPicUrl = "https://public.kelastech.com/default.png";
+
     const isTeacherPage = pathname?.includes('/teacher') && isTeacher(user);
 
     const items = isTeacherPage ? teacherRoutes : guestRoutes;
@@ -112,7 +114,7 @@ export function AppSidebar({
                                 >
                                     <Avatar className="h-8 w-8 rounded-lg">
                                         <AvatarImage
-                                            src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
+                                            src={user.imageUrl || defaultPicUrl}
                                             alt={user.name}
                                         />
                                         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
@@ -138,7 +140,7 @@ export function AppSidebar({
                                     <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                         <Avatar className="h-8 w-8 rounded-lg">
                                             <AvatarImage
-                                                src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
+                                                src={user.imageUrl || defaultPicUrl}
                                                 alt={user.name}
                                             />
                                             <AvatarFallback className="rounded-lg">

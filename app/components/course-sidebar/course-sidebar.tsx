@@ -29,7 +29,6 @@ interface CourseSidebarProps {
 };
 
 const CourseSidebar = ({ course, purchase }: CourseSidebarProps) => {
-    const { pathname } = useLocation();
     return (
         <Sidebar variant="inset" collapsible="offcanvas">
             <SidebarContent>

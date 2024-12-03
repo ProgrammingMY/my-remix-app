@@ -1,4 +1,3 @@
-
 import { ChevronsUpDown, Download, File } from "lucide-react"
 
 import { Button } from "~/components/ui/button"
@@ -26,44 +25,86 @@ export function CourseAttachments({
     const fetcher = useFetcher();
     const { slug } = useParams();
 
-    useEffect(() => {
-        const getAttachment = async () => {
-            if (fetcher.state === "idle" && fetcher.data && attachmentName) {
-                const data = fetcher.data as string;
+    // useEffect(() => {
+    //     const getAttachment = async () => {
+    //         if (fetcher.state === "idle" && fetcher.data && attachmentName) {
+    //             const data = fetcher.data;
 
-                const response = await fetch(data);
+    //             try {
+    //                 const response = await fetch(data);
 
-                if (response.status !== 200) {
-                    return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
-                }
+    //                 if (response.status !== 200) {
+    //                     return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
+    //                 }
 
-                const blob = URL.createObjectURL(await response.blob());
+    //                 const blob = await response.blob();
+    //                 const url = URL.createObjectURL(blob);
 
-                const link = document.createElement("a");
-                link.href = blob;
-                link.download = attachmentName;
-                link.click();
+    //                 // Mobile-friendly download handling
+    //                 if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    //                     // For mobile devices, open in new tab
+    //                     window.open(url, '_blank');
+    //                 } else {
+    //                     // For desktop, use the link click approach
+    //                     const link = document.createElement("a");
+    //                     link.href = url;
+    //                     link.download = attachmentName;
+    //                     link.click();
+    //                 }
 
-                setAttachmentName(null);
-                URL.revokeObjectURL(blob);
-            }
-        }
+    //                 setAttachmentName(null);
+    //                 // Delay the URL revocation to ensure download starts
+    //                 setTimeout(() => URL.revokeObjectURL(url), 1000);
+    //             } catch (error) {
+    //                 setAttachmentName(null);
+    //                 return jsonWithError({ result: "Error" }, { message: "Something went wrong downloading the file." });
+    //             }
+    //         }
+    //     }
 
-        getAttachment();
+    //     getAttachment();
 
-    }, [fetcher.state, fetcher.data])
+    // }, [fetcher.state, fetcher.data])
 
     const onDownload = async (attachment: AttachmentType | Pick<AttachmentType, "fileName">) => {
-        try {
-            if ("fileUrl" in attachment) {
+        // if attachment doesnt have fileurl just return
+        if ("fileUrl" in attachment) {
+            try {
                 setAttachmentName(attachment.fileName);
-                fetcher.load(`/api/courses/${slug}/download/${attachment.fileUrl}`);
+                // Properly encode the URL parameters
+                const encodedSlug = encodeURIComponent(slug!);
+                const encodedFileUrl = encodeURIComponent(attachment.fileUrl);
+                const response = await fetch(`/api/courses/${encodedSlug}/download/${encodedFileUrl}`);
+
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Mobile-friendly download handling
+                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                    // For mobile devices, use direct download
+                    window.location.href = url;
+                } else {
+                    // For desktop, use the link click approach
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = attachment.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                setAttachmentName(null);
+            } catch (error) {
+                setAttachmentName(null);
+                jsonWithError({ result: "Error" }, { message: "Failed to download file." });
             }
-        } catch (error) {
-            setAttachmentName(null);
-            return jsonWithError({ result: "Error" }, { message: "Something went wrong." });
         }
-    }
+    };
 
     return (
         <Collapsible
