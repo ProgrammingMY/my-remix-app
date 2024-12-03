@@ -12,6 +12,7 @@ import { CourseProgressButton } from "./course-progress-button";
 import { jsonWithError, jsonWithSuccess } from "remix-toast";
 import { CourseAttachments } from "./course-attachments";
 import { isAuthenticated } from "~/utils/auth.server";
+import { Preview } from "~/components/preview";
 
 export const action = async ({ request, context, params }: ActionFunctionArgs) => {
     try {
@@ -167,6 +168,9 @@ const ChapterIdPage = () => {
                             </Button>
                         )}
                     </div>
+                    <Preview
+                        value={chapter.description || ""}
+                    />
                     <Separator />
                     <div>
                         {!!attachments.length && (

@@ -14,8 +14,9 @@ import { Button } from '~/components/ui/button';
 import { useState } from 'react'
 import { Pencil } from 'lucide-react';
 import { cn } from '~/lib/utils';
-import { Textarea } from '~/components/ui/textarea';
 import { useFetcher, useNavigate } from '@remix-run/react';
+import { Editor } from '~/components/editor';
+import { Preview } from '~/components/preview';
 
 interface TitleFormProps {
     initialData: {
@@ -26,8 +27,8 @@ interface TitleFormProps {
 
 // 100 alphanumeric characters and spaces and _ only
 const formSchema = z.object({
-    description: z.string().min(5).max(100).regex(/^[a-zA-Z0-9\s_]+$/, {
-        message: "Max 100 alphanumeric characters, space and '_' only",
+    description: z.string().min(5, {
+        message: "Description must be at least 5 characters",
     }),
 });
 
@@ -40,6 +41,14 @@ export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => 
     const toggleEditting = () => {
         setIsEditting((prev) => !prev);
     }
+
+    const modules = {
+        toolbar: [
+            ['bold', 'italic', 'underline'],
+            ['clean'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ],
+    };
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -75,9 +84,7 @@ export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => 
                 </Button>
             </div>
             {!isEditting ? (
-                <p className={cn("text-sm mt-2", !initialData.description && "text-slate-500 italic")}>
-                    {fetcher.formData ? fetcher.formData.get("description") as string : initialData.description || "No description"}
-                </p>
+                fetcher.formData ? <Preview value={fetcher.formData.get("description") as string} /> : <Preview value={initialData.description || "No description"} />
             ) : (
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4 mt-4'>
@@ -87,9 +94,7 @@ export const DescriptionForm = ({ initialData, courseSlug }: TitleFormProps) => 
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Textarea
-                                            disabled={!isEditting}
-                                            placeholder='e.g. This course is about...'
+                                        <Editor
                                             {...field}
                                         />
                                     </FormControl>

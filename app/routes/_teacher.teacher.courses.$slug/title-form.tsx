@@ -20,8 +20,8 @@ import { CourseFormProps } from '~/lib/types';
 
 // 30 alphanumeric characters and spaces and _ only
 const formSchema = z.object({
-    title: z.string().min(5).max(30).regex(/^[a-zA-Z0-9\s_]+$/, {
-        message: "Max 30 alphanumeric characters, space and '_' only",
+    title: z.string().min(5).max(100).regex(/^[a-zA-Z0-9\s_]+$/, {
+        message: "Max 100 alphanumeric characters, space and '_' only",
     }),
 });
 

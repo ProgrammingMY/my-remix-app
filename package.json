@@ -61,6 +61,8 @@
     "react-dropzone-esm": "^15.0.1",
     "react-hook-form": "^7.53.1",
     "react-hot-toast": "^2.4.1",
+    "react-quill-new": "^3.3.3",
+    "remix-themes": "^1.5.1",
     "remix-toast": "^1.2.2",
     "remix-utils": "^7.7.0",
     "tailwind-merge": "^2.5.4",
