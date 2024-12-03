@@ -41,7 +41,7 @@ export default function Features() {
     return (
         <section
             id="features"
-            className="container mx-auto py-24 sm:py-32 space-y-8 px-4 md:px-0"
+            className="container mx-auto py-24 sm:py-32 space-y-8 px-4"
         >
             <h2 className="text-3xl lg:text-4xl font-bold md:text-center">
                 Why choose{" "}
