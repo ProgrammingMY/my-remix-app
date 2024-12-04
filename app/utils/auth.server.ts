@@ -22,7 +22,7 @@ import {
   setEmailVerificationCookie,
 } from "./verify.server";
 import { removeGoogleSession } from "./google.server";
-import { signupSchema } from "~/lib/schema";
+import { loginSchema, signupSchema } from "~/lib/schema";
 
 export const sessionToken = "token";
 
@@ -64,22 +64,21 @@ export async function isAuthenticated(request: Request, env: Env) {
 // redirect with encode url
 export async function login(request: Request, env: Env) {
   const formData = await request.formData();
-
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const submission = parseWithZod(formData, { schema: loginSchema });
 
   let headers = new Headers();
+  let message = "";
 
-  if (!email || !password) {
-    const error = new Error();
-    error.message = "Email or password is required";
+  if (submission.status !== "success") {
     return {
-      error,
-      headers,
+      result: submission.reply(),
     };
   }
 
+  const { email, password } = submission.value;
+
   const db = drizzle(env.DB_drizzle, { schema });
+
   const userInDb = await db.query.user.findFirst({
     where: eq(schema.user.email, email),
     columns: {
@@ -90,39 +89,33 @@ export async function login(request: Request, env: Env) {
     },
   });
 
-  if (!userInDb || !userInDb.hashedPassword) {
-    const error = {
-      message: "Invalid email or password",
-    };
+  if (!userInDb) {
     return {
-      error,
-      headers,
+      result: submission.reply({ formErrors: ["Invalid email or password"] }),
+    };
+  }
+
+  if (!userInDb.hashedPassword) {
+    message = "You signed up with Google, please continue with Google";
+    return {
+      result: submission.reply({ formErrors: [message] }),
     };
   }
 
   const passwordMatch = await bcrypt.compare(password, userInDb.hashedPassword);
 
   if (!passwordMatch) {
-    const error = {
-      message: "Invalid email or password",
-    };
     return {
-      error,
-      headers,
+      result: submission.reply({ formErrors: ["Invalid email or password"] }),
     };
   }
 
   // if user is not verified
   if (!userInDb.emailVerified) {
     await startTOTPProcess(request, headers, userInDb.id, userInDb.email, env);
-    const error = {
-      message: "Please verify your email",
-      redirectTo: "/verify",
-    };
-    return {
-      error,
+    return redirect("/verify", {
       headers,
-    };
+    });
   }
 
   // create a new token session and store it in the database
@@ -135,7 +128,9 @@ export async function login(request: Request, env: Env) {
 
   headers.append("Set-Cookie", await commitSession(session));
 
-  return { error: undefined, headers };
+  return redirect("/user", {
+    headers,
+  });
 }
 
 export async function signup(request: Request, env: Env) {
@@ -174,6 +169,7 @@ export async function signup(request: Request, env: Env) {
       .set({
         name,
         hashedPassword: await bcrypt.hash(password, 12),
+        imageUrl: env.DEFAULT_PIC_URL,
       })
       .where(eq(schema.user.id, existingUser.id));
 
@@ -214,6 +210,7 @@ export async function signup(request: Request, env: Env) {
       name,
       hashedPassword,
       roleId: studentRoleId?.id,
+      imageUrl: env.DEFAULT_PIC_URL,
     })
     .returning({
       id: schema.user.id,

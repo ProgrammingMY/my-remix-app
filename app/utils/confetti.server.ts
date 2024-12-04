@@ -6,6 +6,11 @@ const cookieName = "_confetti";
 export const confettiStorage = createCookieSessionStorage({
   cookie: {
     name: cookieName,
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    secrets: ["s3cr3t"],
+    secure: process.env.NODE_ENV === "production",
   },
 });
 

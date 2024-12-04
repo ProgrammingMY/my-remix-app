@@ -28,9 +28,6 @@ export default function BunnyPlayer({
 
     useEffect(() => {
         setMounted(true);
-        return () => {
-            setData(null);
-        };
     }, []);
 
     useEffect(() => {
@@ -47,10 +44,16 @@ export default function BunnyPlayer({
                 onReady();
             }
         }
-    }, [fetcher.state, fetcher.data]);
+    }, [fetcher.state, fetcher.data, mounted]);
 
-    if (!mounted || !data) {
-        return <div className="w-full aspect-video" />;
+    // Server-side and initial client render
+    if (!mounted) {
+        return <div className="relative w-full aspect-video" />;
+    }
+
+    // Loading state
+    if (!data) {
+        return <div className="relative w-full aspect-video" />;
     }
 
     return (

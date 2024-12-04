@@ -1,20 +1,66 @@
-// app/routes/login.tsx
+
+import { getFormProps, getInputProps, useForm } from '@conform-to/react'
+import { getZodConstraint, parseWithZod } from '@conform-to/zod'
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Link, redirect, useActionData, useFetcher, useNavigate } from "@remix-run/react";
+import { Form, Link, redirect, useActionData, useFetcher, useNavigate, useNavigation } from "@remix-run/react";
 import { Loader2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { loginSchema } from "~/lib/schema";
 import { isAuthenticated, login } from "~/utils/auth.server";
+
+// Second, we need to export an action function, here we will use the
+// `authenticator.authenticate method`
+export async function action({ request, context }: ActionFunctionArgs) {
+    const { env } = context.cloudflare;
+
+    return await login(request, env);
+};
+
+// Finally, we can export a loader function where we check if the user is
+// authenticated with `authenticator.isAuthenticated` and redirect to the
+// dashboard if it is or return null if it's not
+export async function loader({ request, context }: LoaderFunctionArgs) {
+    const { env } = context.cloudflare;
+
+    const { user, headers } = await isAuthenticated(request, env);
+
+    if (user && user.emailVerified) {
+        return redirect("/user", {
+            headers
+        });
+    }
+
+    if (user && !user.emailVerified) {
+        return redirect("/verify", {
+            headers
+        });
+    }
+
+    return null;
+};
 
 // First we create our UI with the form doing a POST and the inputs with the
 // names we are going to use in the strategy
 export default function Screen() {
-    const data = useActionData<typeof action>();
-    const { error } = data ?? {};
+    const actionData = useActionData<typeof action>();
     const navigate = useNavigate();
-    const fetcher = useFetcher();
-    const isLoading = fetcher.state === "submitting" || fetcher.state === "loading";
+    const navigation = useNavigation();
+
+    const isLoading = navigation.state === "submitting" || navigation.state === "loading";
+
+    const [form, fields] = useForm({
+        id: "login-form",
+        constraint: getZodConstraint(loginSchema),
+        lastResult: actionData?.result,
+        onValidate({ formData }) {
+            return parseWithZod(formData, { schema: loginSchema });
+        },
+        shouldValidate: "onBlur",
+    });
+
+
     return (
         <>
             <Link
@@ -43,31 +89,37 @@ export default function Screen() {
                     Enter your email below to login to your account
                 </p>
             </div>
-            <fetcher.Form method="post">
+            <Form method="POST" {...getFormProps(form)}>
                 <div className="grid gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor={fields.email.id}>Email</Label>
                         <Input
-                            id="email"
-                            type="email"
-                            name="email"
+                            {...getInputProps(fields.email, { type: "email" })}
                             placeholder="m@example.com"
-                            required
+                            autoComplete="email"
                         />
+                        {fields.email.errors && (
+                            <p className="text-red-600 text-sm">{fields.email.errors[0]}</p>
+                        )}
                     </div>
                     <div className="grid gap-2">
-                        <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
-
-                        </div>
+                        <Label htmlFor={fields.password.id}>Password</Label>
                         <Input
-                            type="password"
-                            name="password"
+                            {...getInputProps(fields.password, { type: "password" })}
                             autoComplete="current-password"
-                            required
+                            placeholder="Enter your password"
                         />
+                        {fields.password.errors && (
+                            <p className="text-red-600 text-sm">{fields.password.errors[0]}</p>
+                        )}
                     </div>
-                    {error ? <p className="text-red-600">{error.message}</p> : null}
+                    {form.errors && form.errors.length > 0 && (
+                        <div className="text-red-600 text-sm">
+                            {form.errors.map((error, i) => (
+                                <p key={i}>{error}</p>
+                            ))}
+                        </div>
+                    )}
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? <><Loader2 className="animate-spin" /> Logging in...</> : "Login"}
                     </Button>
@@ -81,7 +133,7 @@ export default function Screen() {
                         Continue with Google
                     </Button>
                 </div>
-            </fetcher.Form>
+            </Form>
             <div className="text-center">
                 <Link
                     to="/forgot-password"
@@ -106,52 +158,6 @@ export default function Screen() {
                     />
             </div> */}
         </>
-
     );
 }
 
-// Second, we need to export an action function, here we will use the
-// `authenticator.authenticate method`
-export async function action({ request, context }: ActionFunctionArgs) {
-    const { env } = context.cloudflare;
-
-    const { error, headers } = await login(request, env);
-
-    if (error) {
-        if (error.message === "Please verify your email") {
-            return redirect("/verify", {
-                headers
-            });
-        }
-        return {
-            error
-        };
-    }
-
-    return redirect('/user', {
-        headers,
-    });
-};
-
-// Finally, we can export a loader function where we check if the user is
-// authenticated with `authenticator.isAuthenticated` and redirect to the
-// dashboard if it is or return null if it's not
-export async function loader({ request, context }: LoaderFunctionArgs) {
-    const { env } = context.cloudflare;
-
-    const { user, headers } = await isAuthenticated(request, env);
-
-    if (user && user.emailVerified) {
-        return redirect("/user", {
-            headers
-        });
-    }
-
-    if (user && !user.emailVerified) {
-        return redirect("/verify", {
-            headers
-        });
-    }
-
-    return null;
-};

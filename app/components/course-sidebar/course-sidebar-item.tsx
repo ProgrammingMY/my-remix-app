@@ -26,6 +26,7 @@ export const CourseSidebarItem = ({
             <SidebarMenuButton
                 asChild
                 isActive={pathname?.includes(id)}
+                size={"lg"}
             >
                 <Link to={`/courses/${courseSlug}/chapters/${id}`} className="flex items-center">
                     <Icon

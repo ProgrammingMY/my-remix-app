@@ -3,6 +3,7 @@ import { BookOpen } from "lucide-react";
 import { formatPrice } from "~/lib/format";
 import { CourseProgress } from "./course-progress";
 import { Link } from "@remix-run/react";
+import { Card } from "./ui/card";
 
 interface CourseCardProps {
     slug: string;
@@ -25,7 +26,7 @@ export const CourseCard = ({
 }: CourseCardProps) => {
     return (
         <Link to={`/courses/${slug}`}>
-            <div className="group hover:shadow-sm transition overflow-hidden border rounded-lg p-3 h-full">
+            <Card className="group hover:shadow-sm transition overflow-hidden border rounded-lg p-3 h-full">
                 <div className="relative w-full aspect-video rounded-md overflow-hidden">
                     <img
                         className="object-cover"
@@ -62,7 +63,7 @@ export const CourseCard = ({
                         </p>
                     )}
                 </div>
-            </div>
+            </Card>
         </Link>
     )
 }

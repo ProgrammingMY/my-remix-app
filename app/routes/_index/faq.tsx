@@ -49,7 +49,7 @@ export default function FAQs() {
     return (
         <section
             id="faq"
-            className="container mx-auto py-24 sm:py-32 px-4 md:px-0"
+            className="container mx-auto py-24 sm:py-32 px-4"
         >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Frequently Asked{" "}

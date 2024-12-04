@@ -2,7 +2,7 @@ export default function About() {
     return (
         <section
             id="about"
-            className="container mx-auto py-24 sm:py-32"
+            className="container mx-auto py-24 sm:py-32 px-4"
         >
             <div className="bg-muted/50 border rounded-lg py-12">
                 <div className="px-6 flex flex-col-reverse md:flex-row gap-8 md:gap-12">

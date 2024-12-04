@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SafeUserType } from "~/lib/types";
 import { capitalizeFirstLetter } from "~/lib/format";
 import { isTeacher } from "~/lib/isTeacher";
+import { ModeToggle } from "../toggle-theme";
 
 const guestRoutes = [
     {
@@ -56,6 +57,8 @@ export function AppSidebar({
     const navigate = useNavigate();
     const fetcher = useFetcher();
 
+    const defaultPicUrl = "https://public.kelastech.com/default.png";
+
     const isTeacherPage = pathname?.includes('/teacher') && isTeacher(user);
 
     const items = isTeacherPage ? teacherRoutes : guestRoutes;
@@ -68,15 +71,12 @@ export function AppSidebar({
     }
 
     return (
-        <Sidebar collapsible="icon">
+        <Sidebar>
             <SidebarContent>
                 <SidebarGroup>
-                    {state === "expanded" && (
-                        <div className="flex justify-between items-center">
-                            <SidebarHeader className="text-lg font-medium line-clamp-1">KELAS TECH</SidebarHeader>
-                            <SidebarTrigger />
-                        </div>
-                    )}
+                    <SidebarHeader>
+                        <img className="w-4/5 mx-auto py-2" src='/logo.png' alt="logo" />
+                    </SidebarHeader>
                     <SidebarSeparator />
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -89,7 +89,7 @@ export function AppSidebar({
                             )}
                             {items.map((item) => (
                                 <SidebarMenuItem key={item.label}>
-                                    <SidebarMenuButton asChild>
+                                    <SidebarMenuButton size={"lg"} className="px-6" isActive={pathname === item.href} asChild>
                                         <Link to={item.href}>
                                             <item.icon />
                                             <span>{item.label}</span>
@@ -112,7 +112,7 @@ export function AppSidebar({
                                 >
                                     <Avatar className="h-8 w-8 rounded-lg">
                                         <AvatarImage
-                                            src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
+                                            src={user.imageUrl || defaultPicUrl}
                                             alt={user.name}
                                         />
                                         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
@@ -138,7 +138,7 @@ export function AppSidebar({
                                     <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                         <Avatar className="h-8 w-8 rounded-lg">
                                             <AvatarImage
-                                                src={"https://ui.shadcn.com/avatars/shadcn.jpg"}
+                                                src={user.imageUrl || defaultPicUrl}
                                                 alt={user.name}
                                             />
                                             <AvatarFallback className="rounded-lg">

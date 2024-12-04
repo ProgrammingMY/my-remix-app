@@ -5,7 +5,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { getFormProps, getInputProps, useForm } from '@conform-to/react'
 import { getZodConstraint, parseWithZod } from '@conform-to/zod'
-import { z } from "zod";
 
 import { isAuthenticated, signup } from "~/utils/auth.server"
 import { signupSchema } from "~/lib/schema";
@@ -144,9 +143,7 @@ export default function Screen() {
                         </Link>
                     </p>
                 </div>
-
             </Form>
-
         </div>
     )
 }

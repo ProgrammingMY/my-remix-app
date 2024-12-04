@@ -6,7 +6,7 @@ export default function Footer() {
         <footer id="footer">
             <hr className="w-11/12 mx-auto" />
 
-            <section className="container mx-auto py-20 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-x-12 gap-y-8 px-4 md:px-0">
+            <section className="container mx-auto py-20 grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-x-12 gap-y-8 px-4">
                 <div className="col-span-full xl:col-span-2">
                     <a
                         rel="noreferrer noopener"
