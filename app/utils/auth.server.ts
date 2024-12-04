@@ -105,9 +105,8 @@ export async function login(request: Request, env: Env) {
   const passwordMatch = await bcrypt.compare(password, userInDb.hashedPassword);
 
   if (!passwordMatch) {
-    message = "Invalid email or password";
     return {
-      result: submission.reply({ formErrors: [message] }),
+      result: submission.reply({ formErrors: ["Invalid email or password"] }),
     };
   }
 

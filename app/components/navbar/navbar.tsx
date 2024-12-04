@@ -14,12 +14,6 @@ export default function Navbar({ userName }: { userName: string }) {
                     <MenuIcon size={32} />
                 </Button>
             )}
-            {/* <h1 className={cn(
-                "font-bold text-2xl ml-20 transition-all",
-                sidebar.isMobile && "text-xl ml-0",
-                sidebar.open && "ml-64 ",
-
-            )}>Welcome! {capitalizeFirstLetter(userName)}</h1> */}
         </div>
     )
 }

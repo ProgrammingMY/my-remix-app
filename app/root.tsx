@@ -2,6 +2,7 @@ import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import {
   json,
   Links,
+  LiveReload,
   Meta,
   Outlet,
   Scripts,
@@ -15,6 +16,11 @@ import "./tailwind.css";
 import { useEffect } from "react";
 import { getConfetti } from "~/utils/confetti.server";
 import { Confetti } from "~/components/confetti";
+
+import clsx from "clsx"
+import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from "remix-themes"
+
+import { themeSessionResolver } from "~/utils/theme.server"
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -76,10 +82,11 @@ export const links: LinksFunction = () => [
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Get both toast and confetti from the request
-  const [{ toast, headers: toastHeaders }, { confetti, headers: confettiHeaders }] =
+  const [{ toast, headers: toastHeaders }, { confetti, headers: confettiHeaders }, { getTheme }] =
     await Promise.all([
       getToast(request),
-      getConfetti(request)
+      getConfetti(request),
+      themeSessionResolver(request)
     ]);
 
   // Combine the headers
@@ -90,34 +97,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Important to pass in the headers so the toast is cleared properly
   return json({
     toastLib: toast,
-    confetti
+    confetti,
+    themeLib: getTheme()
   }, { headers });
 }
 
+export default function AppWithProviders() {
+  const { themeLib } = useLoaderData<typeof loader>();
 
-export function Layout({ children }: { children: React.ReactNode }) {
+
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#FFFFFF" />
-        <meta name="msapplication-TileColor" content="#FFFFFF" />
-        <meta name="msapplication-TileImage" content="/favicon-512x512.png" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        {children}
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
+    <>
+      <ThemeProvider specifiedTheme={themeLib} themeAction="/api/theme">
+        <App />
+      </ThemeProvider>
+    </>
   );
 }
 
-export default function App() {
-  const { toastLib, confetti } = useLoaderData<typeof loader>();
+function App() {
+  const { toastLib, confetti, themeLib } = useLoaderData<typeof loader>();
+  const [theme] = useTheme();
 
   useEffect(() => {
     if (toastLib) {
@@ -136,10 +136,24 @@ export default function App() {
   }, [toastLib])
 
   return (
-    <>
-      <Toaster />
-      <Confetti id={confetti} />
-      <Outlet />
-    </>
-  );
+    <html lang="en" className={clsx(theme)}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#FFFFFF" />
+        <meta name="msapplication-TileColor" content="#FFFFFF" />
+        <meta name="msapplication-TileImage" content="/favicon-512x512.png" />
+        <Meta />
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(themeLib)} />
+        <Links />
+      </head>
+      <body>
+        <Toaster />
+        <Confetti id={confetti} />
+        <Outlet />
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  )
 }

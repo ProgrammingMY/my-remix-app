@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SafeUserType } from "~/lib/types";
 import { capitalizeFirstLetter } from "~/lib/format";
 import { isTeacher } from "~/lib/isTeacher";
+import { ModeToggle } from "../toggle-theme";
 
 const guestRoutes = [
     {
